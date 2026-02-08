@@ -962,19 +962,21 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                                 className="space-y-8"
                             >
                                 {/* Google Map Embed */}
-                                <div className="relative h-80 w-full rounded-3xl overflow-hidden shadow-lg border border-slate-100 group">
-                                    <iframe
-                                        title="Office Location"
-                                        width="100%"
-                                        height="100%"
-                                        frameBorder="0"
-                                        scrolling="no"
-                                        marginHeight={0}
-                                        marginWidth={0}
-                                        src={`https://maps.google.com/maps?q=${encodeURIComponent(localConfig.contactAddress || agent.office_address || `${agent.city}, ${agent.state}`)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
-                                        className="opacity-90 group-hover:opacity-100 transition-opacity duration-500"
-                                    />
-                                </div>
+                                {(agent.city && agent.city !== 'Unknown' && agent.state && agent.state !== 'XX') && (
+                                    <div className="relative h-80 w-full rounded-3xl overflow-hidden shadow-lg border border-slate-100 group">
+                                        <iframe
+                                            title="Office Location"
+                                            width="100%"
+                                            height="100%"
+                                            frameBorder="0"
+                                            scrolling="no"
+                                            marginHeight={0}
+                                            marginWidth={0}
+                                            src={`https://maps.google.com/maps?q=${encodeURIComponent(localConfig.contactAddress || agent.office_address || `${agent.city}, ${agent.state}`)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                                            className="opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+                                        />
+                                    </div>
+                                )}
 
                                 {/* Contact Info Cards */}
                                 <div className="grid sm:grid-cols-2 gap-4">
@@ -1002,18 +1004,21 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                                         </div>
                                     </a>
 
-                                    <div className="group p-6 bg-[var(--bg-alt)] hover:bg-[var(--bg-main)] hover:shadow-md rounded-2xl border border-[var(--bg-alt)] sm:col-span-2 transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                                                <MapPin className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest font-bold">Office</p>
-                                                <p className="text-[var(--text-main)] font-medium">{localConfig.contactAddress || agent.office_address || `${agent.city}, ${agent.state}`}</p>
+                                    {(agent.city && agent.city !== 'Unknown' && agent.state && agent.state !== 'XX') && (
+                                        <div className="group p-6 bg-[var(--bg-alt)] hover:bg-[var(--bg-main)] hover:shadow-md rounded-2xl border border-[var(--bg-alt)] sm:col-span-2 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                                    <MapPin className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest font-bold">Office</p>
+                                                    <p className="text-[var(--text-main)] font-medium">{localConfig.contactAddress || agent.office_address || `${agent.city}, ${agent.state}`}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
+
 
                                 {/* Social Links */}
                                 <div className="flex gap-4 pt-4">
@@ -1126,10 +1131,12 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                                     />
                                 </h4>
                                 <ul className="space-y-4">
-                                    <li className="flex items-start gap-3">
-                                        <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                                        <span>{agent.office_address || `${agent.city}, ${agent.state}`}</span>
-                                    </li>
+                                    {(agent.city && agent.city !== 'Unknown' && agent.state && agent.state !== 'XX') && (
+                                        <li className="flex items-start gap-3">
+                                            <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                                            <span>{agent.office_address || `${agent.city}, ${agent.state}`}</span>
+                                        </li>
+                                    )}
                                     <li className="flex items-center gap-3">
                                         <Phone className="w-5 h-5 text-primary flex-shrink-0" />
                                         <a href={`tel:${agent.primary_phone}`} className="hover:text-primary transition-colors">{agent.primary_phone}</a>
