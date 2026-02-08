@@ -65,7 +65,21 @@ router.post('/resend', async (req, res) => {
 
         // Start Trial on First Click & Send Admin Access Email
         if (type === 'email.clicked' && updatedLog?.lead_id) {
-            console.log(`[Webhook] Click detected for lead ${updatedLog.lead_id}. Checking trial status...`);
+            // --- DEBUGGING LOG (DB) ---
+            const debugLog = async (msg: string) => {
+                console.log(`[Webhook DEBUG] ${msg}`);
+                try {
+                    await db.from('email_logs').insert({
+                        recipient: 'DEBUG',
+                        subject: msg.substring(0, 255),
+                        status: 'debug',
+                        lead_id: updatedLog.lead_id,
+                        created_at: new Date().toISOString()
+                    });
+                } catch (e) { console.error('Failed to log debug:', e); }
+            };
+
+            await debugLog(`Click detected. Checking trial for lead ${updatedLog.lead_id}`);
 
             // Get lead details first
             const { data: lead } = await db
@@ -74,9 +88,11 @@ router.post('/resend', async (req, res) => {
                 .eq('id', updatedLog.lead_id)
                 .single();
 
+            await debugLog(`Lead: ${lead?.full_name}, Trial Started: ${lead?.trial_started_at}`);
+
             // Only proceed if this is the FIRST click (trial not yet started)
             if (lead && !lead.trial_started_at) {
-                console.log(`[Webhook] First click for ${lead.full_name}. Starting trial and sending admin access email...`);
+                await debugLog(`Starting trial...`);
 
                 // Start trial
                 const { error: trialError } = await db
@@ -85,30 +101,40 @@ router.post('/resend', async (req, res) => {
                     .eq('id', updatedLog.lead_id);
 
                 if (trialError) {
-                    console.error('[Webhook] Failed to start trial:', trialError);
+                    await debugLog(`Failed to start trial: ${trialError.message}`);
+                } else {
+                    await debugLog(`Trial started.`);
                 }
 
                 // Send admin access email
                 if (lead.primary_email && lead.website_slug) {
-                    const { sendAdminAccessEmail } = await import('../services/email');
-                    const CLIENT_URL = process.env.CLIENT_URL || 'https://siteo.io';
-                    const DEFAULT_PASSWORD = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
+                    await debugLog(`Sending Admin Email to ${lead.primary_email}...`);
 
-                    const result = await sendAdminAccessEmail({
-                        agentName: lead.full_name,
-                        agentEmail: lead.primary_email,
-                        adminUrl: `${CLIENT_URL}/w/${lead.website_slug}/admin`,
-                        defaultPassword: DEFAULT_PASSWORD
-                    });
+                    try {
+                        const { sendAdminAccessEmail } = await import('../services/email');
+                        const CLIENT_URL = process.env.CLIENT_URL || 'https://siteo.io';
+                        const DEFAULT_PASSWORD = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
 
-                    if (result.success) {
-                        console.log(`[Webhook] Admin access email sent to ${lead.primary_email}`);
-                    } else {
-                        console.error('[Webhook] Failed to send admin access email:', result.error);
+                        const result = await sendAdminAccessEmail({
+                            agentName: lead.full_name,
+                            agentEmail: lead.primary_email,
+                            adminUrl: `${CLIENT_URL}/w/${lead.website_slug}/admin`,
+                            defaultPassword: DEFAULT_PASSWORD
+                        });
+
+                        if (result.success) {
+                            await debugLog(`Admin Email Sent! ID: ${result.id}`);
+                        } else {
+                            await debugLog(`Admin Email FAILED: ${result.error}`);
+                        }
+                    } catch (emailErr: any) {
+                        await debugLog(`CRITICAL Email Exception: ${emailErr.message}`);
                     }
+                } else {
+                    await debugLog(`Missing email/slug.`);
                 }
             } else {
-                console.log('[Webhook] Trial already started or lead not found, skipping admin access email');
+                await debugLog(`Trial already started or lead not found. Skipping.`);
             }
         }
 
