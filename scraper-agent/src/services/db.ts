@@ -180,7 +180,7 @@ export async function getLeads(): Promise<{ success: boolean; data?: any[]; erro
             .from('scraped_agents')
             .select('*')
             .order('updated_at', { ascending: false })
-            .limit(50); // Limit to 50 for now
+            .limit(1000); // Increased limit to 1000
 
         if (error) {
             console.error('[DB] Error fetching leads:', error.message);
