@@ -242,6 +242,10 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
         – Team Siteo
       </p>
 
+      <p style="font-size:14px; color:#64748b; line-height:1.6; margin-top:32px; border-top:1px solid #f1f5f9; padding-top:24px;">
+        If you have any questions, email us at <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
+      </p>
+
     </div>
 
     <!-- Footer -->

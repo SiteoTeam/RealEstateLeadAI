@@ -58,14 +58,7 @@ router.post('/login', async (req, res) => {
 
         console.log(`[Auth] Login success for ${slug}`);
 
-        // Start Trial if not already started
-        if (!agent.trial_started_at) {
-            console.log(`[Auth] Starting trial for ${slug} on first login.`);
-            const now = new Date().toISOString();
-            await updateLead(agent.id, { trial_started_at: now });
-            // Update local object so token/claims (if any) reflect it, or irrelevant
-            agent.trial_started_at = now;
-        }
+
 
         // 3. Generate Token
         const token = generateToken(agent.id, agent.website_slug);
