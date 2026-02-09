@@ -268,7 +268,7 @@ router.get('/emails', verifySupabaseUser, async (req, res) => {
             .from('email_logs')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(50);
+            .limit(200);
 
         if (error) {
             console.error('[Admin] DB Error fetching logs:', error);
