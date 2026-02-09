@@ -483,17 +483,54 @@ export async function sendAdminAccessEmail(data: AdminAccessEmailData): Promise<
 
   </div>
 
-</body>
-</html>
       `
     });
 
     if (error) throw error;
 
+    // Log to Database
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) {
+        // Fetch lead by email to link it if possible, or just insert
+        // CRMBoard matches via email string, so lead_id is good but nice-to-have.
+        // We do a simple insert for now.
+        const { data: leads } = await db.from('agent_leads').select('id').eq('primary_email', agentEmail).single();
+
+        await db.from('email_logs').insert({
+          lead_id: leads?.id || null,
+          recipient: agentEmail,
+          subject: 'Admin access to your website',
+          status: 'sent',
+          resend_id: result?.id,
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (logErr) {
+      console.error('[Email] Failed to log to DB:', logErr);
+    }
+
     return { success: true, id: result?.id };
 
   } catch (err: any) {
     console.error('[Email] Admin access email error:', err);
+
+    // Log failure
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) {
+        await db.from('email_logs').insert({
+          recipient: agentEmail,
+          subject: 'Admin access to your website',
+          status: 'failed',
+          error_message: err.message,
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (logErr) { }
+
     return { success: false, error: err.message };
   }
 }
