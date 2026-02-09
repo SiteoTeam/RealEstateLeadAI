@@ -62,17 +62,32 @@ export function EmailLogs() {
 
     // Generate ghost leads for emails that don't match existing leads
     const activeLeads = [...leads]
-    const existingEmails = new Set(leads.map(l => l.primary_email?.toLowerCase().trim()))
+
+    // Create a Set of normalized existing emails for fast lookup
+    const existingEmails = new Set(
+        leads.map(l => l.primary_email ? l.primary_email.trim().toLowerCase() : '')
+    )
+
+    // Track added ghost emails to prevent duplicates in the ghost list itself
+    const addedGhostEmails = new Set<string>()
 
     logs.forEach(log => {
-        const recipient = (log.recipient || (log.to && log.to[0]))?.toLowerCase().trim()
-        if (recipient && !existingEmails.has(recipient)) {
-            existingEmails.add(recipient)
+        // Handle recipient from log.recipient OR log.to array
+        let recipient = log.recipient
+        if (!recipient && log.to) {
+            if (Array.isArray(log.to)) recipient = log.to[0]
+            else recipient = log.to as string
+        }
+
+        const normalizedRecipient = recipient ? recipient.trim().toLowerCase() : ''
+
+        if (normalizedRecipient && !existingEmails.has(normalizedRecipient) && !addedGhostEmails.has(normalizedRecipient)) {
+            addedGhostEmails.add(normalizedRecipient)
             // Create a temporary ghost lead
             activeLeads.push({
-                id: `ghost-${recipient}`,
-                full_name: recipient.split('@')[0], // Use email prefix as name
-                primary_email: recipient,
+                id: `ghost-${normalizedRecipient}`,
+                full_name: normalizedRecipient.split('@')[0], // Use email prefix as name
+                primary_email: normalizedRecipient,
                 created_at: log.created_at,
                 is_paid: false,
                 // Add required fields with defaults
@@ -84,7 +99,7 @@ export function EmailLogs() {
                 social_media: {},
                 website_config: {},
                 user_id: ''
-            } as any) // Type assertion to bypass strict DBProfile if needed, or matched interface
+            } as any)
         }
     })
 

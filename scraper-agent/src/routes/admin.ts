@@ -321,9 +321,10 @@ router.post('/trigger-batch', verifySupabaseUser, async (req, res) => {
 
         // Dynamic imports to ensure fresh state
         const { getUncontactedLeads, markLeadAsContacted } = await import('../services/db');
-        const { sendAdminAccessEmail } = await import('../services/email');
+        const { sendWelcomeEmail } = await import('../services/email');
 
         const batchSize = Math.min(Number(req.body.batchSize) || 5, 20);
+        const CLIENT_URL = process.env.CLIENT_URL || 'https://siteo.io';
 
         const result = await getUncontactedLeads(batchSize);
         if (!result.success || !result.data) {
@@ -346,14 +347,17 @@ router.post('/trigger-batch', verifySupabaseUser, async (req, res) => {
                 continue;
             }
 
+            const safeSlug = lead.website_slug || lead.id;
             const emailData = {
                 agentName: lead.full_name,
                 agentEmail: lead.primary_email,
-                adminUrl: `${process.env.CLIENT_URL || 'https://siteo.io'}/agents/${lead.website_slug || lead.id}/admin`,
-                defaultPassword: 'welcome-siteo'
+                websiteUrl: `${CLIENT_URL}/w/${safeSlug}`,
+                adminUrl: `${CLIENT_URL}/w/${safeSlug}/admin/login`,
+                defaultPassword: process.env.DEFAULT_AGENT_PASSWORD || 'welcome123',
+                leadId: lead.id
             };
 
-            const sendResult = await sendAdminAccessEmail(emailData);
+            const sendResult = await sendWelcomeEmail(emailData);
 
             if (sendResult.success) {
                 const updateResult = await markLeadAsContacted(lead.id);
