@@ -189,6 +189,7 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
                 )
             })}
 
+
             <DeleteLeadModal
                 lead={leadToDelete}
                 isOpen={!!leadToDelete}

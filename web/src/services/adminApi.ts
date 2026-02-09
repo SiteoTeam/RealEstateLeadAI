@@ -225,9 +225,29 @@ export const adminApi = {
                 err = JSON.parse(text);
             } catch (e) {
                 // If not JSON, use the raw text as error if short, or status text
-                err = { error: `Server Error (${response.status}): ${text.substring(0, 100)}` };
+                const errMsg = text.length > 100 ? text.substring(0, 100) + '...' : text;
+                err = { error: `Server Error (${response.status}): ${errMsg}` };
             }
             throw new Error(err.message || err.error || `Request failed: ${response.status} ${response.statusText}`)
+        }
+        return response.json()
+    },
+
+    triggerBatchEmail: async (batchSize: number = 5, token?: string) => {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : getAuthHeaders())
+        }
+
+        const response = await fetch(`${API_BASE}/api/admin/trigger-batch`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ batchSize }),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}))
+            throw new Error(err.message || err.error || 'Failed to trigger batch email')
         }
         return response.json()
     }

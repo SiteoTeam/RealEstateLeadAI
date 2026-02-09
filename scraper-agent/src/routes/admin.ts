@@ -311,65 +311,76 @@ router.delete('/emails/:recipient', verifySupabaseUser, async (req, res) => {
 
 // TEST EMAIL: POST /api/admin/test-email
 router.post('/test-email', verifySupabaseUser, async (req, res) => {
+    // ... (existing test email logic) ...
+});
+
+// TRIGGER BATCH: POST /api/admin/trigger-batch
+router.post('/trigger-batch', verifySupabaseUser, async (req, res) => {
     try {
-        const { resend } = await import('../services/email');
-        const { getDb } = await import('../services/db');
+        console.log('[Admin] Manually triggering batch email process...');
 
-        if (!resend) return res.status(500).json({ error: 'Resend not configured' });
+        // Dynamic imports to ensure fresh state
+        const { getUncontactedLeads, markLeadAsContacted } = await import('../services/db');
+        const { sendAdminAccessEmail } = await import('../services/email');
 
-        // Use the configured FROM email as the TO email for safety/testing
-        // or allow user to specify if they are admin.
-        // For now, let's send to a hardcoded safe address or the configured FROM address (if it's a real inbox)
-        // Actually, let's send to 'onboarding@resend.dev' if in test mode, or the user's email?
-        // Let's just send to "delivered@resend.dev" which is a magic address that always succeeds
-        // OR better, send to the user who is logged in (if we had their email).
-        // Let's use 'delivered@resend.dev' to guarantee a log entry.
+        const batchSize = Math.min(Number(req.body.batchSize) || 5, 20);
 
-        // Send actual email
-        const { data: result, error } = await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-            to: 'delivered@resend.dev',
-            subject: 'Test Email from Siteo Admin',
-            html: '<p>This is a test email to verify logs.</p>'
-        });
-
-        if (error) throw error;
-
-        // Log to DB explicitly here too (or rely on service if we used a shared function)
-        const db = getDb();
-        if (db) {
-            await db.from('email_logs').insert({
-                recipient: 'delivered@resend.dev',
-                subject: 'Test Email from Siteo Admin',
-                status: 'sent',
-                resend_id: result?.id,
-                created_at: new Date().toISOString()
-            });
+        const result = await getUncontactedLeads(batchSize);
+        if (!result.success || !result.data) {
+            return res.status(500).json({ error: result.error || 'Failed to fetch leads' });
         }
 
-        res.json({ success: true, id: result?.id });
+        const leads = result.data;
+        const stats = { sent: 0, failed: 0, skipped: 0 };
+        const logs: string[] = [];
+
+        if (leads.length === 0) {
+            return res.json({ message: 'No new leads to contact', stats, logs });
+        }
+
+        // Process in background to avoid timeout? 
+        // No, let's process and return results so admin sees what happened.
+        for (const lead of leads) {
+            if (!lead.primary_email || !lead.primary_email.includes('@')) {
+                stats.skipped++;
+                continue;
+            }
+
+            const emailData = {
+                agentName: lead.full_name,
+                agentEmail: lead.primary_email,
+                adminUrl: `${process.env.CLIENT_URL || 'https://siteo.io'}/agents/${lead.website_slug || lead.id}/admin`,
+                defaultPassword: 'welcome-siteo'
+            };
+
+            const sendResult = await sendAdminAccessEmail(emailData);
+
+            if (sendResult.success) {
+                const updateResult = await markLeadAsContacted(lead.id);
+                if (updateResult.success) {
+                    stats.sent++;
+                    logs.push(`Sent to ${lead.primary_email}`);
+                } else {
+                    stats.failed++;
+                    logs.push(`DB Update Failed for ${lead.primary_email}`);
+                }
+            } else {
+                stats.failed++;
+                logs.push(`Email Failed to ${lead.primary_email}: ${sendResult.error}`);
+            }
+
+            await new Promise(r => setTimeout(r, 500)); // Rate limit safety
+        }
+
+        res.json({ success: true, stats, logs });
 
     } catch (err: any) {
-        console.error('Test email error:', err);
-
-        // Log failure if possible
-        try {
-            const { getDb } = await import('../services/db');
-            const db = getDb();
-            if (db) {
-                await db.from('email_logs').insert({
-                    recipient: 'delivered@resend.dev',
-                    subject: 'Test Email from Siteo Admin',
-                    status: 'failed',
-                    error_message: err.message,
-                    created_at: new Date().toISOString()
-                });
-            }
-        } catch (e) { }
-
+        console.error('[Admin] Trigger batch error:', err);
         res.status(500).json({ error: err.message });
     }
 });
+
+// CRON: Send Trial Expiry Reminders
 
 // CRON: Send Trial Expiry Reminders
 // POST /api/admin/cron/trial-expiry-reminders

@@ -42,6 +42,9 @@ app.use('/api/stripe', stripeRoutes);
 
 import agentRoutes from './routes/agent';
 app.use('/api/agent', agentRoutes);
+
+import { cronRoutes } from './routes/cron';
+app.use('/api/cron', cronRoutes);
 import { seedDefaultPasswords } from './services/auth';
 
 // Run seeding on startup
@@ -302,6 +305,7 @@ app.post('/api/contact', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`\n🚀 Agent Scraper API running on http://localhost:${PORT}`);
     console.log(`   POST /api/extract - Extract & Auto-Save CB profile (Protected)`);
+    console.log(`   POST /api/cron    - Trigger Manual Batch Emails (Protected)`);
     console.log(`   POST /api/contact - Send contact form email (Public)`);
     console.log(`   GET  /api/health  - Health check\n`);
 });

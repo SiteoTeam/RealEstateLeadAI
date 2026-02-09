@@ -194,6 +194,52 @@ export async function getLeads(): Promise<{ success: boolean; data?: any[]; erro
 }
 
 /**
+ * Fetch uncontacted leads for batch processing
+ */
+export async function getUncontactedLeads(limit: number = 10): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        const { data, error } = await client
+            .from('scraped_agents')
+            .select('*')
+            .is('last_contacted_at', null)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (error) {
+            console.error('[DB] Error fetching uncontacted leads:', error.message);
+            return { success: false, error: error.message };
+        }
+        return { success: true, data };
+    } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+}
+
+/**
+ * Mark a lead as contacted
+ */
+export async function markLeadAsContacted(id: string): Promise<{ success: boolean; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        const { error } = await client
+            .from('scraped_agents')
+            .update({ last_contacted_at: new Date().toISOString() })
+            .eq('id', id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (err) {
+        console.error('[DB] Error marking lead contacted:', err);
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+}
+
+/**
  * Delete a lead by ID
  */
 /**

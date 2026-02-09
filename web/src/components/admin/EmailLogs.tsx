@@ -104,6 +104,8 @@ export function EmailLogs() {
                     >
                         <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
+
+                    {/* Button Removed: Moved to CRMBoard/Leads Section */}
                 </div>
             </div>
 

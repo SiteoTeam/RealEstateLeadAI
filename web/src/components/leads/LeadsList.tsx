@@ -112,8 +112,8 @@ export function LeadsList() {
                         <button
                             onClick={() => setActiveTab('new')}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'new'
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             My Leads
@@ -123,8 +123,8 @@ export function LeadsList() {
                         <button
                             onClick={() => setActiveTab('contacted')}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'contacted'
-                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20 glow-purple' // glowing purple
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20 glow-purple' // glowing purple
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             Emailed Leads
@@ -132,15 +132,38 @@ export function LeadsList() {
                         </button>
                     </div>
 
-                    <div className="relative w-full sm:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Search agents..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-                        />
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <button
+                            onClick={async () => {
+                                if (!confirm('Send batch of 5 emails to uncontacted leads?')) return;
+                                try {
+                                    setSendingEmail(true);
+                                    const res = await adminApi.triggerBatchEmail(5);
+                                    alert(`Batch Complete!\nSent: ${res.stats.sent}\nFailed: ${res.stats.failed}`);
+                                    fetchData();
+                                } catch (err: any) {
+                                    alert('Error: ' + err.message);
+                                } finally {
+                                    setSendingEmail(false);
+                                }
+                            }}
+                            disabled={sendingEmail}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                            {sendingEmail ? 'Sending...' : 'Send Batch'}
+                        </button>
+
+                        <div className="relative w-full sm:w-72">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search agents..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                            />
+                        </div>
                     </div>
                 </div>
 
