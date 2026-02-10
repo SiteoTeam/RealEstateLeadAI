@@ -14,7 +14,7 @@ if (!apiKey) {
 export const resend = apiKey ? new Resend(apiKey) : null;
 
 // The "From" email must be from your verified domain
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com';
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'hello@siteo.io';
 
 interface ContactFormData {
   visitorName: string;
@@ -689,8 +689,109 @@ export async function sendPaymentSuccessEmail({ agentName, agentEmail, amount, d
     }
 
     return { success: true, id: data?.id };
+    return { success: true, id: data?.id };
   } catch (err: any) {
     console.error('[Email] Exception sending payment success email:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+// Audit / Analysis Email
+interface AuditEmailData {
+  agentName: string;
+  agentEmail: string;
+  auditUrl: string;
+}
+
+export async function sendAuditEmail(data: AuditEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
+  const { agentName, agentEmail, auditUrl } = data;
+
+  try {
+    if (!resend) {
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    console.log(`[Email] Sending audit report link to ${agentEmail}`);
+
+    const { data: result, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: agentEmail,
+      subject: `Website Report for ${agentName}`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0; padding:0; background-color:#f8fafc; font-family: 'Inter', Helvetica, Arial, sans-serif;">
+
+  <div style="max-width:600px; margin:40px auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border: 1px solid #e2e8f0;">
+
+    <div style="padding: 40px 32px;">
+      <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:24px;">
+        Hi ${agentName.split(' ')[0]},
+      </p>
+
+      <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:24px;">
+        We analyzed your digital footprint to see how you compare to top agents in your market.
+      </p>
+
+      <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:32px;">
+        We found <strong>3 key areas</strong> where you might be losing potential leads.
+      </p>
+
+      <div style="background-color:#f1f5f9; padding:24px; border-radius:8px; text-align:center; margin-bottom:32px;">
+        <p style="margin:0 0 16px 0; font-size:14px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
+          YOUR ANALYSIS IS READY
+        </p>
+        <a href="${auditUrl}" style="display:inline-block; background-color:#1e293b; color:#ffffff; font-size:16px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:6px;">
+          View Full Report
+        </a>
+      </div>
+
+      <p style="font-size:14px; color:#64748b; line-height:1.6; margin-bottom:0;">
+        This link is private and will expire in 7 days.
+      </p>
+    </div>
+
+    <div style="background-color:#f8fafc; padding:20px 32px; text-align:center; border-top:1px solid #e2e8f0;">
+      <p style="margin:0; color:#94a3b8; font-size:12px;">
+        Sent to ${agentEmail}
+      </p>
+    </div>
+
+  </div>
+
+</body>
+</html>
+            `
+    });
+
+    if (error) throw error;
+
+    // Log to Database
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) {
+        await db.from('email_logs').insert({
+          recipient: agentEmail,
+          subject: `Website Report for ${agentName}`,
+          status: 'sent',
+          resend_id: result?.id,
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (logErr) {
+      console.error('[Email] Failed to log to DB:', logErr);
+    }
+
+    return { success: true, id: result?.id };
+
+  } catch (err: any) {
+    console.error('[Email] Audit email error:', err);
     return { success: false, error: err.message };
   }
 }

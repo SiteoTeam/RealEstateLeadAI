@@ -43,6 +43,9 @@ app.use('/api/stripe', stripeRoutes);
 import agentRoutes from './routes/agent';
 app.use('/api/agent', agentRoutes);
 
+import { auditRoutes } from './routes/audit';
+app.use('/api/audit', auditRoutes);
+
 import { cronRoutes } from './routes/cron';
 app.use('/api/cron', cronRoutes);
 import { seedDefaultPasswords } from './services/auth';

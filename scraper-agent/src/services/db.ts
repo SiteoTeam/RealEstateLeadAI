@@ -473,3 +473,123 @@ function _extractState(address: string | null): string | null {
     const match = address.match(/\b([A-Z]{2})\b/);
     return match ? match[1] : null;
 }
+
+/**
+ * Audit Feature Helpers
+ */
+
+/**
+ * Check if a feature flag is enabled
+ */
+export async function isFeatureEnabled(key: string): Promise<boolean> {
+    const client = getSupabaseClient();
+    if (!client) return false;
+
+    const { data } = await client
+        .from('feature_flags')
+        .select('is_enabled')
+        .eq('key', key)
+        .single();
+
+    return data?.is_enabled || false;
+}
+
+/**
+ * Create a new audit for a lead
+ */
+export async function createAudit(leadId: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        // 1. Check if there is an active (pending) audit for this lead
+        // If so, return it instead of creating a new one (idempotency)
+        const { data: existing } = await client
+            .from('lead_audits')
+            .select('*')
+            .eq('lead_id', leadId)
+            .eq('status', 'pending')
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+        if (existing) {
+            return { success: true, data: existing };
+        }
+
+        // 2. Create new audit
+        const { data, error } = await client
+            .from('lead_audits')
+            .insert({
+                lead_id: leadId,
+                status: 'pending',
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+            })
+            .select('*')
+            .single();
+
+        if (error) throw error;
+        return { success: true, data };
+
+    } catch (err) {
+        console.error('[DB] Error creating audit:', err);
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+}
+
+/**
+ * Get audit by token (Public Access)
+ */
+export async function getAuditByToken(token: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        const { data, error } = await client
+            .from('lead_audits')
+            .select(`
+                *,
+                lead:lead_id (
+                    full_name,
+                    brokerage,
+                    website_slug
+                )
+            `)
+            .eq('token', token)
+            .single();
+
+        if (error) throw error;
+        return { success: true, data };
+
+    } catch (err) {
+        console.error('[DB] Error fetching audit by token:', err);
+        return { success: false, error: 'Audit not found or expired' };
+    }
+}
+
+/**
+ * Submit Audit Answers & Score
+ */
+export async function submitAudit(token: string, answers: any, score: number): Promise<{ success: boolean; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        const { error } = await client
+            .from('lead_audits')
+            .update({
+                status: 'completed',
+                answers: answers,
+                computed_score: score,
+                completed_at: new Date().toISOString()
+            })
+            .eq('token', token)
+            .eq('status', 'pending'); // Optimistic locking: only update if still pending
+
+        if (error) throw error;
+        return { success: true };
+
+    } catch (err) {
+        console.error('[DB] Error submitting audit:', err);
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+}

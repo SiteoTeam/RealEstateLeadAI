@@ -250,5 +250,25 @@ export const adminApi = {
             throw new Error(err.message || err.error || 'Failed to trigger batch email')
         }
         return response.json()
+    },
+
+    // Audit Feature
+    sendAudit: async (leadId: string, token?: string) => {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : getAuthHeaders())
+        }
+
+        const response = await fetch(`${API_BASE}/api/audit/create`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ leadId }),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}))
+            throw new Error(err.message || err.error || 'Failed to send audit')
+        }
+        return response.json()
     }
 }

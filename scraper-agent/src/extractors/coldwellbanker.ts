@@ -519,17 +519,20 @@ function extractSocialLinks(markdown: string): CBAgentProfile['social_links'] {
 /**
  * Extract office information
  */
-function extractOfficeInfo(markdown: string): { name: string | null; address: string | null } {
-    // Office name patterns - look for "Coldwell Banker Realty" specifically
+function extractOfficeInfo(markdown: string, html?: string): { name: string | null; address: string | null } {
+    // Office name patterns - look for "Coldwell Banker" brokerages
     let officeName: string | null = null;
 
-    // First try: Look for explicit "Coldwell Banker Realty - Location"
-    const cbRealtyMatch = markdown.match(/Coldwell\s+Banker\s+Realty\s*[-–]?\s*([A-Za-z\s]{3,30})/i);
-    if (cbRealtyMatch && cbRealtyMatch[1]) {
-        const candidate = cbRealtyMatch[1].trim();
-        // Skip false positives
-        if (!['License', 'Agent', 'About', 'Contact'].includes(candidate)) {
-            officeName = `Coldwell Banker Realty - ${candidate}`;
+    // First try: Look for explicit "Coldwell Banker <Brokerage> - Location"
+    const cbBrokerageMatch = markdown.match(/Coldwell\s+Banker\s+([A-Za-z]+(?:\s+[A-Za-z]+)?(?:,\s*Realtors?)?)\s*[-–]?\s*([A-Za-z\s]{3,30})?/i);
+    if (cbBrokerageMatch) {
+        const brokerage = cbBrokerageMatch[1]?.trim();
+        const location = cbBrokerageMatch[2]?.trim();
+        if (brokerage && !['License', 'Agent', 'About', 'Contact'].includes(brokerage)) {
+            officeName = `Coldwell Banker ${brokerage}`;
+            if (location && !['License', 'Agent', 'About', 'Contact'].includes(location)) {
+                officeName += ` - ${location}`;
+            }
         }
     }
 
@@ -538,20 +541,63 @@ function extractOfficeInfo(markdown: string): { name: string | null; address: st
         officeName = 'Coldwell Banker Realty';
     }
 
+    // Common street suffixes for address matching
+    const STREET_SUFFIXES_SHORT = 'Blvd|St|Ave|Rd|Dr|Ln|Way|Ct|Pkwy|Pl|Cir|Trl|Ter|Loop|Run|Path';
+    const STREET_SUFFIXES_LONG = 'Boulevard|Blvd|Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Way|Court|Ct|Parkway|Pkwy|Place|Pl|Circle|Cir|Trail|Trl|Terrace|Ter|Loop|Run|Path|Commons|Crossing|Plaza';
+
     // ADDRESS EXTRACTION - Multiple strategies
     let address: string | null = null;
 
+    // Strategy 0: DOM-Based - Look for address links/text in the office section (Most Reliable)
+    if (!address && html) {
+        try {
+            const $ = cheerio.load(html);
+
+            // Look for links that contain a zip code (common for map links to office address)
+            $('a[href*="map"], a[href*="google"], a[href*="direction"]').each((_, el) => {
+                if (address) return;
+                const text = $(el).text().trim();
+                if (/\d{5}/.test(text) && text.length > 10 && text.length < 120) {
+                    address = text.replace(/\s+/g, ' ').trim();
+                }
+            });
+
+            // Fallback: Look for any element near "Office" heading that has an address-like text with zip code
+            if (!address) {
+                $('h1, h2, h3, h4, h5, h6').each((_, headerEl) => {
+                    if (address) return;
+                    const headerText = $(headerEl).text().trim().toLowerCase();
+                    if (headerText.includes('office') || headerText.includes('location')) {
+                        // Search the parent section for address-like text
+                        const section = $(headerEl).parent();
+                        section.find('a, p, span, div, address').each((_, childEl) => {
+                            if (address) return;
+                            const text = $(childEl).text().trim();
+                            if (/\d{5}/.test(text) && text.length > 10 && text.length < 120) {
+                                address = text.replace(/\s+/g, ' ').trim();
+                            }
+                        });
+                    }
+                });
+            }
+        } catch (e) {
+            console.log('[Address] DOM extraction error:', e);
+        }
+    }
+
     // Strategy 1: Look for address in map links [Address Text](map_url)
-    const mapLinkMatch = markdown.match(/\[([^\]]*\d{5}[^\]]*)\]\([^)]*(?:map|google|maps)[^)]*\)/i);
-    if (mapLinkMatch && mapLinkMatch[1]) {
-        address = mapLinkMatch[1].trim();
+    if (!address) {
+        const mapLinkMatch = markdown.match(/\[([^\]]*\d{5}[^\]]*)\]\([^)]*(?:map|google|maps)[^)]*\)/i);
+        if (mapLinkMatch && mapLinkMatch[1]) {
+            address = mapLinkMatch[1].trim();
+        }
     }
 
     // Strategy 2: Look for address near "Office" section with flexible format
     if (!address) {
         // Match: Street Number + Street Name + (optional Suite) + City + State + Zip
         const officeAddressMatch = markdown.match(
-            /(?:Office|Location|Address)[:\s\S]{0,100}?(\d+\s+[A-Za-z0-9\s]+(?:Blvd|St|Ave|Rd|Dr|Ln|Way|Ct|Pkwy)[,.\s]+(?:Ste\.?|Suite)?\s*\d*[,.\s]+[A-Za-z\s]+,?\s*[A-Z]{2}\s*\d{5})/i
+            new RegExp(`(?:Office|Location|Address)[:\\s\\S]{0,100}?(\\d+\\s+[A-Za-z0-9\\s]+(?:${STREET_SUFFIXES_SHORT})[,.\\s]+(?:Ste\\.?|Suite)?\\s*\\d*[,.\\s]+[A-Za-z\\s]+,?\\s*[A-Z]{2}\\s*\\d{5})`, 'i')
         );
         if (officeAddressMatch && officeAddressMatch[1]) {
             address = officeAddressMatch[1].replace(/\s+/g, ' ').trim();
@@ -561,7 +607,7 @@ function extractOfficeInfo(markdown: string): { name: string | null; address: st
     // Strategy 3: Broad search for any US address pattern
     if (!address) {
         const broadMatch = markdown.match(
-            /(\d+\s+[A-Za-z0-9\s]+(?:Boulevard|Blvd|Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Way|Court|Ct|Parkway|Pkwy)[,.\s]+(?:Ste\.?|Suite\.?)?\s*\d*[,.\s]*[A-Za-z\s]+,\s*[A-Z]{2}\s*\d{5})/i
+            new RegExp(`(\\d+\\s+[A-Za-z0-9\\s]+(?:${STREET_SUFFIXES_LONG})[,.\\s]+(?:Ste\\.?|Suite\\.?)?\\s*\\d*[,.\\s]*[A-Za-z\\s]+,\\s*[A-Z]{2}\\s*\\d{5})`, 'i')
         );
         if (broadMatch && broadMatch[1]) {
             address = broadMatch[1].replace(/\s+/g, ' ').trim();
@@ -777,7 +823,7 @@ export async function extractCBProfile(profileUrl: string): Promise<CBAgentProfi
     const headshotUrl = extractHeadshotUrl(markdown, html);
     const logoUrl = extractLogoUrl(markdown, html);
     const socialLinks = extractSocialLinks(markdown);
-    const officeInfo = extractOfficeInfo(markdown);
+    const officeInfo = extractOfficeInfo(markdown, html);
     const licenseNumber = extractLicense(markdown);
 
     // BIO STRATEGY: JSON-LD > DOM (Cheerio) > Meta Tags > Markdown

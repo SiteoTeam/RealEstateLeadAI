@@ -258,4 +258,71 @@ router.post('/stripe', async (req: any, res) => {
     res.json({ received: true });
 });
 
+
+
+// Handle Inbound Emails from Resend
+// POST /api/webhooks/resend/inbound
+router.post('/resend/inbound', async (req, res) => {
+    try {
+        const payload = req.body;
+
+        // Resend Inbound Payload Structure:
+        // { from, to, subject, text, html, ... }
+        const { from, subject, html, text } = payload;
+
+        // Basic validation
+        if (!from || !subject) {
+            // Resend might send a verification ping or empty payload
+            return res.status(200).send('Webhook received');
+        }
+
+        console.log(`[Webhook] Received INBOUND email from ${from}: ${subject}`);
+
+        const FORWARD_TO = 'siteoteam@gmail.com';
+
+        // Dynamic import to avoid circular dependency issues if any
+        const { resend } = await import('../services/email');
+
+        if (!resend) {
+            console.error('[Webhook] Resend client not configured.');
+            return res.status(500).json({ error: 'Resend client not configured' });
+        }
+
+        // Forward email
+        const { data, error } = await resend.emails.send({
+            from: 'Siteo <hello@siteo.io>',
+            to: FORWARD_TO,
+            replyTo: from,
+            subject: `[Fwd] ${subject}`,
+            html: `
+                <div style="background:#f4f4f5; padding:20px; font-family:sans-serif;">
+                    <div style="max-width:600px; margin:0 auto; background:white; padding:20px; border-radius:8px; border:1px solid #e4e4e7;">
+                        <h2 style="margin-top:0; color:#18181b;">Forwarded Message</h2>
+                        <p style="color:#52525b; border-bottom:1px solid #e4e4e7; padding-bottom:12px; margin-bottom:20px;">
+                            <strong>From:</strong> ${from}<br>
+                            <strong>Subject:</strong> ${subject}
+                        </p>
+                        
+                        <div style="color:#18181b;">
+                            ${html || text || '(No content)'}
+                        </div>
+                    </div>
+                </div>
+            `
+        });
+
+        if (error) {
+            console.error('[Webhook] Failed to forward email:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        console.log(`[Webhook] Successfully forwarded inbound email to ${FORWARD_TO}`);
+        res.status(200).json({ success: true, message: 'Email forwarded' });
+
+    } catch (err: any) {
+        console.error('[Webhook] Error processing inbound email:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export const webhookRoutes = router;
