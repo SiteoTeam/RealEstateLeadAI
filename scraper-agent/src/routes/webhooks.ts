@@ -266,14 +266,19 @@ router.post('/resend/inbound', async (req, res) => {
     try {
         const payload = req.body;
 
-        // Resend Inbound Payload Structure:
-        // { from, to, subject, text, html, ... }
-        const { from, subject, html, text } = payload;
+        console.log('[Webhook] Inbound Payload:', JSON.stringify(payload, null, 2));
+
+        // Resend Inbound Payload Structure might be wrapped in 'data' if it's an event
+        // { type: 'email.received', data: { from, subject, ... } }
+        const emailData = payload.data || payload;
+
+        const { from, subject, html, text } = emailData;
 
         // Basic validation
         if (!from || !subject) {
+            console.log('[Webhook] Missing from/subject. Fields found:', Object.keys(emailData));
             // Resend might send a verification ping or empty payload
-            return res.status(200).send('Webhook received');
+            return res.status(200).send('Webhook received (Validation Failed)');
         }
 
         console.log(`[Webhook] Received INBOUND email from ${from}: ${subject}`);
