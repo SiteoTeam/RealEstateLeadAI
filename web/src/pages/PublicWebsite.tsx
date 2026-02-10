@@ -25,6 +25,19 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
     const [savedConfig, setSavedConfig] = useState<any>({}) // Reference for dirty check
     const { state: localConfig, setState: setLocalConfig, undo, redo, canUndo, canRedo, reset } = useHistory<any>({})
 
+    // Preview Notice State
+    const [showPreviewNotice, setShowPreviewNotice] = useState(false)
+
+    useEffect(() => {
+        const source = searchParams.get('source')
+        const hasSeen = localStorage.getItem('has_seen_preview_notice')
+
+        if ((source === 'email' || source === 'audit') && !hasSeen) {
+            setShowPreviewNotice(true)
+            localStorage.setItem('has_seen_preview_notice', 'true')
+        }
+    }, [searchParams])
+
 
     // UI State
     const [loading, setLoading] = useState(true)
@@ -347,6 +360,30 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                         canUndo={canUndo}
                         canRedo={canRedo}
                     />
+                )}
+
+                {/* Preview Notice Subtitle (One-time) */}
+                {showPreviewNotice && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="fixed top-24 left-0 right-0 z-40 pointer-events-none flex justify-center px-4"
+                    >
+                        <div className="bg-white/90 backdrop-blur-md border border-indigo-100 shadow-xl rounded-full px-6 py-2.5 flex items-center gap-3 pointer-events-auto">
+                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <BadgeCheck className="w-3.5 h-3.5 text-green-600" />
+                            </div>
+                            <div className="text-sm font-medium text-slate-700">
+                                Private Access Enabled. <span className="text-slate-500 font-normal">Your secure admin link has been sent to your email.</span>
+                            </div>
+                            <button
+                                onClick={() => setShowPreviewNotice(false)}
+                                className="ml-2 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <Minus className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </motion.div>
                 )}
 
                 {/* ===== HERO SECTION - "Editorial Depth" ===== */}
