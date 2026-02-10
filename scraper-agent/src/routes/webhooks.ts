@@ -262,30 +262,59 @@ router.post('/stripe', async (req: any, res) => {
 
 // Handle Inbound Emails from Resend
 // POST /api/webhooks/resend/inbound
+// Handle Inbound Emails from Resend
+// POST /api/webhooks/resend/inbound
 router.post('/resend/inbound', async (req, res) => {
     try {
         const payload = req.body;
 
-        console.log('[Webhook] Inbound Payload:', JSON.stringify(payload, null, 2));
-
-        // Resend Inbound Payload Structure might be wrapped in 'data' if it's an event
-        // { type: 'email.received', data: { from, subject, ... } }
+        // 1. Unwrap Payload (Resend events are wrapped in 'data')
         const emailData = payload.data || payload;
+        const { from, to, subject, html, text, headers } = emailData;
 
-        const { from, subject, html, text } = emailData;
+        console.log(`[Webhook] Inbound email received from: ${from}`);
 
-        // Basic validation
-        if (!from || !subject) {
-            console.log('[Webhook] Missing from/subject. Fields found:', Object.keys(emailData));
-            // Resend might send a verification ping or empty payload
-            return res.status(200).send('Webhook received (Validation Failed)');
+        // --- SAFETY CHECKS (CRITICAL) ---
+
+        // 2. Hard Sender Block (Prevent self-loops)
+        const lowerFrom = from?.toLowerCase() || '';
+        if (
+            lowerFrom.includes('siteoteam@gmail.com') ||
+            lowerFrom.includes('hello@siteo.io') ||
+            lowerFrom.endsWith('@siteo.io')
+        ) {
+            console.warn(`[Webhook] BLOCKED: Email from internal/forwarding address (${from}). Stopping to prevent loop.`);
+            return res.status(200).send('Blocked (Loop Protection)');
         }
 
-        console.log(`[Webhook] Received INBOUND email from ${from}: ${subject}`);
+        // 3. Loop Detection via Headers or Subject
+        // Resend adds specific headers. If we see them, it might be a forwarded message coming back.
+        // Also check for our own subject prefix.
+        if (subject?.startsWith('[Siteo Inbound]')) {
+            console.warn(`[Webhook] BLOCKED: Detected recursive subject (${subject}).`);
+            return res.status(200).send('Blocked (Recursive Subject)');
+        }
+
+        // Check headers for Resend-ID or other loop indicators if provided in payload
+        // Note: Resend incoming webhook payload 'headers' structure varies, strictly checking subject/sender is safest for now.
+
+        // 4. Strict Recipient Filtering
+        // Only forward if it was sent TO hello@siteo.io
+        // (This prevents forwarding emails cc'd to others or random misroutes)
+        const recipientList = Array.isArray(to) ? to : [to];
+        const isForSiteo = recipientList.some((r: string) => r && r.toLowerCase().includes('hello@siteo.io'));
+
+        if (!isForSiteo) {
+            console.log(`[Webhook] SKIPPED: Email not addressed to hello@siteo.io (To: ${to})`);
+            return res.status(200).send('Skipped (Not for hello@siteo.io)');
+        }
+
+        // --- FORWARDING LOGIC ---
 
         const FORWARD_TO = 'siteoteam@gmail.com';
+        const SENDER_IDENTITY = 'Siteo <hello@siteo.io>'; // MUST be verified domain
 
-        // Dynamic import to avoid circular dependency issues if any
+        // Dynamic import
         const { resend } = await import('../services/email');
 
         if (!resend) {
@@ -293,40 +322,48 @@ router.post('/resend/inbound', async (req, res) => {
             return res.status(500).json({ error: 'Resend client not configured' });
         }
 
-        // Forward email
-        const { data, error } = await resend.emails.send({
-            from: 'Siteo <hello@siteo.io>',
+        console.log(`[Webhook] Forwarding safe email from ${from} to ${FORWARD_TO}`);
+
+        const { error } = await resend.emails.send({
+            from: SENDER_IDENTITY,
             to: FORWARD_TO,
-            replyTo: from,
-            subject: `[Fwd] ${subject}`,
+            replyTo: from, // Critical: Allows you to hit "Reply" in Gmail and go to the original sender
+            subject: `[Siteo Inbound] ${subject || '(No Subject)'}`,
             html: `
-                <div style="background:#f4f4f5; padding:20px; font-family:sans-serif;">
-                    <div style="max-width:600px; margin:0 auto; background:white; padding:20px; border-radius:8px; border:1px solid #e4e4e7;">
-                        <h2 style="margin-top:0; color:#18181b;">Forwarded Message</h2>
-                        <p style="color:#52525b; border-bottom:1px solid #e4e4e7; padding-bottom:12px; margin-bottom:20px;">
-                            <strong>From:</strong> ${from}<br>
-                            <strong>Subject:</strong> ${subject}
-                        </p>
+                <div style="font-family: sans-serif; background: #f4f4f5; padding: 20px;">
+                    <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e4e4e7;">
+                        <div style="border-bottom: 1px solid #e4e4e7; padding-bottom: 12px; margin-bottom: 20px;">
+                            <h3 style="margin: 0 0 8px 0; color: #18181b;">Inbound Message</h3>
+                            <p style="margin: 0; color: #52525b; font-size: 14px;">
+                                <strong>From:</strong> ${from}<br>
+                                <strong>To:</strong> hello@siteo.io<br>
+                                <strong>Original Subject:</strong> ${subject}
+                            </p>
+                        </div>
                         
-                        <div style="color:#18181b;">
-                            ${html || text || '(No content)'}
+                        <div style="font-size: 15px; line-height: 1.6; color: #18181b;">
+                            ${html || text || '<em style="color:#71717a">No content provided</em>'}
                         </div>
                     </div>
                 </div>
-            `
+            `,
+            // Start simple: no attachments forwarding in v1 to ensure stability
         });
 
         if (error) {
-            console.error('[Webhook] Failed to forward email:', error);
-            return res.status(500).json({ error: error.message });
+            console.error('[Webhook] Forwarding FAILED:', error);
+            // We return 200 to Resend to stop it from retrying (which could cause billing spikes if logic was buggy)
+            // But we treat it as a hard failure in logs.
+            return res.status(200).json({ error: 'Forwarding failed but acknowledged', details: error });
         }
 
-        console.log(`[Webhook] Successfully forwarded inbound email to ${FORWARD_TO}`);
-        res.status(200).json({ success: true, message: 'Email forwarded' });
+        console.log('[Webhook] Forwarding SUCCESS.');
+        res.status(200).json({ success: true, message: 'Email forwarded safetly' });
 
     } catch (err: any) {
-        console.error('[Webhook] Error processing inbound email:', err);
-        res.status(500).json({ error: err.message });
+        console.error('[Webhook] CRITICAL ERROR:', err);
+        // Always acknowledge to stop retries if it's a code error preventing loop explosions
+        res.status(200).json({ error: 'Internal Error', details: err.message });
     }
 });
 
