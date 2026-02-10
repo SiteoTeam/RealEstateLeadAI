@@ -413,20 +413,7 @@ export function AuditPage() {
         );
     }
 
-    // 3. ANALYZING
-    if (step === 'analyzing') {
-        return (
-            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-                <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-6"></div>
-                <h2 className="text-xl font-bold text-slate-800 animate-pulse">Running diagnostic...</h2>
-                <div className="mt-4 space-y-2 text-center text-sm text-slate-500">
-                    <p className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">Checking mobile responsiveness...</p>
-                    <p className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-1000">Analyzing lead capture pathways...</p>
-                    <p className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-1500">Comparing with local benchmarks...</p>
-                </div>
-            </div>
-        );
-    }
+
 
     // 4. BUFFER
     if (step === 'buffer') {
