@@ -1,19 +1,39 @@
 import { Router } from 'express';
 import { getDb } from '../services/db';
 import multer from 'multer';
-import { verifySupabaseUser } from '../middleware/supabaseAuth'; // Use the secure middleware
+import { verifySupabaseUser, AuthenticatedRequest } from '../middleware/supabaseAuth'; // Use the secure middleware
+import { CLIENT_URL } from '../utils/urls';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+
+// File upload validation: images only, 5MB max
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (_req, file, cb) => {
+        if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error(`Invalid file type: ${file.mimetype}. Only JPEG, PNG, WebP, and GIF are allowed.`));
+        }
+    }
+});
 
 // Unified Admin Routes - reusing Supabase Auth
 // Removed /login (insecure). Use Platform Login instead.
 
 // GET CONFIG: GET /api/admin/config/:id
 // Changed to accept ID parameter since we use centralized auth
-router.get('/config/:id', verifySupabaseUser, async (req, res) => {
+router.get('/config/:id', verifySupabaseUser, async (req: AuthenticatedRequest, res) => {
     try {
         const { id } = req.params;
+
+        // Authorization: Agents can only read their own config
+        if (req.user?.role === 'agent' && req.user?.id !== id) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
         const db = getDb();
         if (!db) return res.status(500).json({ error: 'Database not available' });
 
@@ -27,14 +47,19 @@ router.get('/config/:id', verifySupabaseUser, async (req, res) => {
 
         res.json(data?.website_config || {});
     } catch (err: any) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // UPDATE CONFIG: PATCH /api/admin/config/:id
-router.patch('/config/:id', verifySupabaseUser, async (req, res) => {
+router.patch('/config/:id', verifySupabaseUser, async (req: AuthenticatedRequest, res) => {
     try {
         const { id } = req.params;
+
+        // Authorization: Agents can only update their own config
+        if (req.user?.role === 'agent' && req.user?.id !== id) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
 
         // Ensure user has permission (Platform Admin can edit anyone)
         // const { id: userId } = req.user; 
@@ -70,16 +95,21 @@ router.patch('/config/:id', verifySupabaseUser, async (req, res) => {
 
         res.json({ success: true });
     } catch (err: any) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // UPLOAD IMAGE: POST /api/admin/upload/:slug
 // Need slug to organize folder
-router.post('/upload/:slug', verifySupabaseUser, upload.single('file'), async (req, res) => {
+router.post('/upload/:slug', verifySupabaseUser, upload.single('file'), async (req: AuthenticatedRequest, res) => {
     try {
         const { slug } = req.params;
         const file = req.file;
+
+        // Authorization: Agents can only upload to their own slug folder
+        if (req.user?.role === 'agent' && req.user?.slug !== slug) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
 
         console.log('Upload request received for:', slug);
 
@@ -118,7 +148,7 @@ router.post('/upload/:slug', verifySupabaseUser, upload.single('file'), async (r
 
     } catch (err: any) {
         console.error('Upload Endpoint Error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -138,7 +168,7 @@ router.post('/domains', verifySupabaseUser, async (req, res) => {
         if (err.details) {
             return res.status(err.status || 400).json(err.details);
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -150,7 +180,7 @@ router.get('/domains/:domain', verifySupabaseUser, async (req, res) => {
         res.json(result || { error: 'Domain not found' });
     } catch (err: any) {
         console.error('Get domain error:', err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -165,7 +195,7 @@ router.post('/domains/:domain/verify', verifySupabaseUser, async (req, res) => {
         if (err.details) {
             return res.status(err.status || 400).json(err.details);
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -177,7 +207,7 @@ router.delete('/domains/:domain', verifySupabaseUser, async (req, res) => {
         res.json(result);
     } catch (err: any) {
         console.error('Remove domain error:', err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -205,7 +235,7 @@ router.post('/notify-agent/:id', verifySupabaseUser, async (req, res) => {
         const slug = agent.website_slug;
 
         // Base URL from env or default
-        const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'; // Fallback for dev
+        // Fallback for dev
 
         // If custom domain is set and working, use it? Or just always link to the platform wrapper?
         // Let's use the direct link logic similar to the frontend "Open Website" button
@@ -248,7 +278,7 @@ router.post('/notify-agent/:id', verifySupabaseUser, async (req, res) => {
 
     } catch (err: any) {
         console.error('[Admin] Notify agent CRITICAL error:', err);
-        res.status(500).json({ error: err.message, stack: err.stack });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -280,7 +310,7 @@ router.get('/emails', verifySupabaseUser, async (req, res) => {
 
     } catch (err: any) {
         console.error('Fetch emails error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -305,7 +335,7 @@ router.delete('/emails/:recipient', verifySupabaseUser, async (req, res) => {
         res.json({ success: true });
     } catch (err: any) {
         console.error('Delete emails error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -323,8 +353,12 @@ router.post('/trigger-batch', verifySupabaseUser, async (req, res) => {
         const { getUncontactedLeads, markLeadAsContacted } = await import('../services/db');
         const { sendWelcomeEmail } = await import('../services/email');
 
+        // Authorization: Only platform admins can trigger batches manually
+        if ((req as AuthenticatedRequest).user?.role === 'agent') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
         const batchSize = Math.min(Number(req.body.batchSize) || 5, 20);
-        const CLIENT_URL = process.env.CLIENT_URL || 'https://siteo.io';
 
         const result = await getUncontactedLeads(batchSize);
         if (!result.success || !result.data) {
@@ -380,7 +414,7 @@ router.post('/trigger-batch', verifySupabaseUser, async (req, res) => {
 
     } catch (err: any) {
         console.error('[Admin] Trigger batch error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -458,7 +492,68 @@ router.post('/cron/trial-expiry-reminders', async (req, res) => {
 
     } catch (err: any) {
         console.error('[Cron] Trial reminders error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// CRON ENDPOINT: POST /api/admin/cron/run-batch
+// Authenticated via CRON_SECRET header
+router.post('/cron/run-batch', async (req, res) => {
+    const cronSecret = req.headers['x-cron-secret'] || req.headers['authorization']?.replace('Bearer ', '');
+    const expectedSecret = process.env.CRON_SECRET;
+
+    if (!expectedSecret || cronSecret !== expectedSecret) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        console.log('[Cron] Triggering batch email process...');
+        const { getUncontactedLeads, markLeadAsContacted } = await import('../services/db');
+        const { sendWelcomeEmail } = await import('../services/email');
+
+        // Default to 5 emails per run for cron
+        const batchSize = 5;
+
+        const result = await getUncontactedLeads(batchSize);
+        if (!result.success || !result.data) {
+            return res.json({ success: true, count: 0, message: 'No leads to process' });
+        }
+
+        const leads = result.data;
+        let sentCount = 0;
+
+        for (const lead of leads) {
+            // Use centralized URL logic
+            const safeSlug = lead.website_slug || lead.id;
+            // For cron, we want to track source=cron or similar
+            // But let's keep consistent with manual batch for now -> source=email
+            const websiteUrl = lead.website_config?.custom_domain
+                ? `https://${lead.website_config.custom_domain}`
+                : `${CLIENT_URL}/w/${safeSlug}?source=email`;
+
+            const adminUrl = `${CLIENT_URL}/w/${safeSlug}/admin/login?source=email`;
+            const defaultPassword = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
+
+            const emailResult = await sendWelcomeEmail({
+                agentName: lead.full_name,
+                agentEmail: lead.primary_email,
+                websiteUrl,
+                adminUrl,
+                defaultPassword,
+                leadId: lead.id
+            });
+
+            if (emailResult.success) {
+                await markLeadAsContacted(lead.id);
+                sentCount++;
+            }
+        }
+
+        res.json({ success: true, sent: sentCount });
+
+    } catch (err: any) {
+        console.error('[Cron] Batch error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

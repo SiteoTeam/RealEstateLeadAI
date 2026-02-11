@@ -1,12 +1,23 @@
 
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { getLeadBySlug, getLeadById, updateLead, getAgentBySlug } from '../services/db';
 import { hashPassword, verifyPassword, generateToken, verifyToken, generateResetToken, verifyResetToken } from '../services/auth';
+import { CLIENT_URL } from '../utils/urls';
 
 const router = Router();
 
+// Rate limiter for auth endpoints: 5 attempts per 15 minutes per IP
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many attempts, please try again later.' }
+});
+
 // LOGIN
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
     try {
         const { slug, password } = req.body;
 
@@ -73,7 +84,7 @@ router.post('/login', async (req, res) => {
 });
 
 // FORGOT PASSWORD
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', authLimiter, async (req, res) => {
     try {
         const { slug } = req.body;
 
@@ -94,8 +105,11 @@ router.post('/forgot-password', async (req, res) => {
 
         // Generate reset token
         const resetToken = generateResetToken(agent.id, agent.website_slug);
-        const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
         const resetUrl = `${CLIENT_URL}/w/${agent.website_slug}/admin/reset-password?token=${resetToken}`;
+
+        // Store token on agent record for single-use verification
+        await updateLead(agent.id, { password_reset_token: resetToken } as any);
 
         // Send email
         const { sendPasswordResetEmail } = await import('../services/email');
@@ -118,7 +132,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // RESET PASSWORD (with token)
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', authLimiter, async (req, res) => {
     try {
         const { token, newPassword } = req.body;
 
@@ -139,8 +153,17 @@ router.post('/reset-password', async (req, res) => {
         // Hash new password
         const hashedPassword = await hashPassword(newPassword);
 
-        // Update DB
-        const result = await updateLead(payload.agentId, { password_hash: hashedPassword } as any);
+        // Verify token is the currently valid one (single-use check)
+        const { data: agent } = await getAgentBySlug(payload.slug);
+        if (!agent || agent.password_reset_token !== token) {
+            return res.status(400).json({ error: 'This reset link has already been used' });
+        }
+
+        // Update password AND invalidate the reset token
+        const result = await updateLead(payload.agentId, {
+            password_hash: hashedPassword,
+            password_reset_token: null
+        } as any);
 
         if (!result.success) {
             throw new Error(result.error);

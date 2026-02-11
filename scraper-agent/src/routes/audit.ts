@@ -4,6 +4,7 @@ import { verifySupabaseUser } from '../middleware/supabaseAuth';
 import { createAudit, getAuditByToken, submitAudit, isFeatureEnabled } from '../services/db';
 import { sendAuditEmail } from '../services/email';
 import { getLeadById } from '../services/db';
+import { CLIENT_URL } from '../utils/urls';
 
 const router = express.Router();
 
@@ -48,8 +49,7 @@ router.post('/create', verifySupabaseUser, checkAuditFeature, async (req, res) =
         // Construct the Public Audit URL
         // Currently running on localhost or via environment variable?
         // Let's rely on the referer or a configured base URL.
-        const APP_URL = process.env.VITE_APP_URL || 'http://localhost:5173'; // Default to local dev
-        const auditUrl = `${APP_URL}/audit/${audit.token}?source=audit`;
+        const auditUrl = `${CLIENT_URL}/audit/${audit.token}?source=audit`;
 
         // Send Email
         const emailResult = await sendAuditEmail({
@@ -69,7 +69,7 @@ router.post('/create', verifySupabaseUser, checkAuditFeature, async (req, res) =
 
     } catch (err: any) {
         console.error('[Audit API] Error creating audit:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

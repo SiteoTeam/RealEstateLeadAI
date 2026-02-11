@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { Webhook } from 'svix';
 import { getDb } from '../services/db';
 
 const router = Router();
@@ -7,6 +8,31 @@ const router = Router();
 // POST /api/webhooks/resend
 router.post('/resend', async (req, res) => {
     try {
+        // Verify webhook signature if secret is configured
+        const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+        if (webhookSecret) {
+            const svixHeaders = {
+                'svix-id': req.headers['svix-id'] as string,
+                'svix-timestamp': req.headers['svix-timestamp'] as string,
+                'svix-signature': req.headers['svix-signature'] as string,
+            };
+
+            if (!svixHeaders['svix-id'] || !svixHeaders['svix-timestamp'] || !svixHeaders['svix-signature']) {
+                console.warn('[Webhook] Missing svix verification headers');
+                return res.status(401).json({ error: 'Missing webhook verification headers' });
+            }
+
+            try {
+                const wh = new Webhook(webhookSecret);
+                wh.verify(JSON.stringify(req.body), svixHeaders);
+            } catch (verifyErr) {
+                console.error('[Webhook] Signature verification failed:', verifyErr);
+                return res.status(401).json({ error: 'Invalid webhook signature' });
+            }
+        } else {
+            console.warn('[Webhook] RESEND_WEBHOOK_SECRET not set — skipping signature verification');
+        }
+
         const event = req.body;
 
         // Resend sends an event object like:
@@ -116,7 +142,7 @@ router.post('/resend', async (req, res) => {
 
     } catch (err: any) {
         console.error('[Webhook] Error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -165,7 +191,7 @@ router.post('/stripe', async (req: any, res) => {
         event = stripe.webhooks.constructEvent(req.rawBody, signature, endpointSecret!);
     } catch (err: any) {
         console.error(`[Stripe Webhook] Signature Check Failed: ${err.message}`);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+        return res.status(400).send('Webhook Error: Invalid signature');
     }
 
     // Handle events
@@ -354,7 +380,7 @@ router.post('/resend/inbound', async (req, res) => {
             console.error('[Webhook] Forwarding FAILED:', error);
             // We return 200 to Resend to stop it from retrying (which could cause billing spikes if logic was buggy)
             // But we treat it as a hard failure in logs.
-            return res.status(200).json({ error: 'Forwarding failed but acknowledged', details: error });
+            return res.status(200).json({ error: 'Forwarding failed but acknowledged' });
         }
 
         console.log('[Webhook] Forwarding SUCCESS.');
@@ -363,7 +389,7 @@ router.post('/resend/inbound', async (req, res) => {
     } catch (err: any) {
         console.error('[Webhook] CRITICAL ERROR:', err);
         // Always acknowledge to stop retries if it's a code error preventing loop explosions
-        res.status(200).json({ error: 'Internal Error', details: err.message });
+        res.status(200).json({ error: 'Internal Error' });
     }
 });
 

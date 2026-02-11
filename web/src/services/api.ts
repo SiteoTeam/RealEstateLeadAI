@@ -49,26 +49,7 @@ export function isValidCBUrl(url: string): boolean {
     return url.includes('coldwellbanker.com') && url.includes('/agents/')
 }
 
-/**
- * Helper to get Auth Headers
- */
-const getAuthHeaders = (): Record<string, string> => {
-    // Get the session from local storage (Supabase default)
-    // We scan for the key that starts with 'sb-' and ends with '-auth-token'
-    const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-    if (!key) return {}
-
-    try {
-        const session = JSON.parse(localStorage.getItem(key) || '{}')
-        if (session.access_token) {
-            return { 'Authorization': `Bearer ${session.access_token}` }
-        }
-    } catch (e) {
-        console.error('Error parsing auth token', e)
-    }
-    return {}
-}
-
+import { getAuthHeaders } from '../utils/auth'
 /**
  * Extract an agent profile from a CB URL
  */
@@ -213,7 +194,8 @@ export async function createCheckoutSession(leadId: string, returnUrl: string): 
     const response = await fetch(`${API_BASE}/api/stripe/create-checkout-session`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
         },
         body: JSON.stringify({ leadId, returnUrl })
     })
@@ -246,7 +228,8 @@ export async function cancelSubscription(leadId: string): Promise<{ success: boo
     const response = await fetch(`${API_BASE}/api/stripe/cancel-subscription`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
         },
         body: JSON.stringify({ leadId })
     })

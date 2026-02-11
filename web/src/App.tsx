@@ -121,11 +121,6 @@ function App() {
     }
   }
 
-  const handleSave = async () => {
-    // Legacy manual save handler - keeping it just in case, but auto-save handles main flow
-    setSaveState('saving')
-    setTimeout(() => setSaveState('saved'), 1000)
-  }
 
   const handleReset = () => {
     setProfile(null)
@@ -211,7 +206,7 @@ function App() {
                   <AgentCard
                     profile={profile}
                     state={saveState}
-                    onSave={handleSave}
+                    onSave={() => { }}
                     onCancel={handleReset}
                   />
                 </div>

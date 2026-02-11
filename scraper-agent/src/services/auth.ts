@@ -3,7 +3,12 @@ import * as bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getDb } from './db';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-jwt-key-change-me';
+const _jwtSecret = process.env.JWT_SECRET;
+if (!_jwtSecret) {
+    console.error('FATAL: JWT_SECRET environment variable is not set. Server cannot start securely.');
+    process.exit(1);
+}
+const JWT_SECRET: string = _jwtSecret;
 const SALT_ROUNDS = 10;
 const DEFAULT_PASSWORD = process.env.DEFAULT_AGENT_PASSWORD || 'changeme'; // Set in .env for security
 

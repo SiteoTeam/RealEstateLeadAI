@@ -1,24 +1,8 @@
 
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { getAuthHeaders } from '../utils/auth'
 
-/**
- * Helper to get Auth Headers (Reused from api.ts logic)
- * Ideally we should export this from api.ts
- */
-const getAuthHeaders = (): Record<string, string> => {
-    const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-    if (!key) return {}
-    try {
-        const session = JSON.parse(localStorage.getItem(key) || '{}')
-        if (session.access_token) {
-            return { 'Authorization': `Bearer ${session.access_token}` }
-        }
-    } catch (e) {
-        console.error('Error parsing auth token', e)
-    }
-    return {}
-}
 
 export const adminApi = {
     // Agent Login (New System)
