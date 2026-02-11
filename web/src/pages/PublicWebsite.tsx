@@ -30,7 +30,7 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
 
     useEffect(() => {
         const source = searchParams.get('source')
-        const hasSeen = localStorage.getItem('has_seen_preview_notice')
+        const hasSeen = localStorage.getItem('has_seen_preview_notice_v2')
 
         // Debug log
         console.log('[PreviewNotice] Check:', { source, hasSeen })
@@ -50,7 +50,7 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
 
     const handleDismissNotice = () => {
         setShowPreviewNotice(false)
-        localStorage.setItem('has_seen_preview_notice', 'true')
+        localStorage.setItem('has_seen_preview_notice_v2', 'true')
     }
 
 
