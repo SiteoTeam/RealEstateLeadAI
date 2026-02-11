@@ -701,10 +701,11 @@ interface AuditEmailData {
   agentName: string;
   agentEmail: string;
   auditUrl: string;
+  leadId?: string;
 }
 
 export async function sendAuditEmail(data: AuditEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
-  const { agentName, agentEmail, auditUrl } = data;
+  const { agentName, agentEmail, auditUrl, leadId } = data;
 
   try {
     if (!resend) {
@@ -815,6 +816,7 @@ export async function sendAuditEmail(data: AuditEmailData): Promise<{ success: b
       const db = getDb();
       if (db) {
         await db.from('email_logs').insert({
+          lead_id: leadId || null,
           recipient: agentEmail,
           subject: `Website Report for ${agentName}`,
           status: 'sent',

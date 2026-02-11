@@ -55,7 +55,8 @@ router.post('/create', verifySupabaseUser, checkAuditFeature, async (req, res) =
         const emailResult = await sendAuditEmail({
             agentName: lead.full_name,
             agentEmail: lead.primary_email,
-            auditUrl: auditUrl
+            auditUrl: auditUrl,
+            leadId: leadId
         });
 
         if (!emailResult.success) {
@@ -116,10 +117,6 @@ router.post('/:token/submit', checkAuditFeature, async (req, res) => {
     const { token } = req.params;
     const { answers } = req.body;
 
-    console.log('[Audit Submit] ===== START =====');
-    console.log('[Audit Submit] Token:', token);
-    console.log('[Audit Submit] Answers:', JSON.stringify(answers));
-
     if (!answers) {
         return res.status(400).json({ error: 'Answers are required' });
     }
@@ -127,26 +124,16 @@ router.post('/:token/submit', checkAuditFeature, async (req, res) => {
     try {
         // 1. Get Audit to check status
         const auditResult = await getAuditByToken(token);
-        console.log('[Audit Submit] DB result success:', auditResult.success);
-
         if (!auditResult.success || !auditResult.data) {
-            console.log('[Audit Submit] ABORT: Audit not found');
             return res.status(404).json({ error: 'Audit not found' });
         }
         const audit = auditResult.data;
 
-        // Log the full lead object to diagnose missing fields
-        console.log('[Audit Submit] audit.status:', audit.status);
-        console.log('[Audit Submit] audit.lead:', JSON.stringify(audit.lead));
-        console.log('[Audit Submit] audit.lead_id:', audit.lead_id);
-
         if (audit.status === 'completed') {
-            console.log('[Audit Submit] ABORT: Already completed');
             return res.status(400).json({ error: 'Audit already completed' });
         }
 
         if (new Date(audit.expires_at) < new Date()) {
-            console.log('[Audit Submit] ABORT: Expired');
             return res.status(410).json({ error: 'Audit link expired' });
         }
 
@@ -172,60 +159,18 @@ router.post('/:token/submit', checkAuditFeature, async (req, res) => {
         }
 
         const score = Math.max(15, Math.min(95, baseScore));
-        console.log('[Audit Submit] Score:', score, 'Scenario:', scenario);
 
         // 3. Save to DB
         const saveResult = await submitAudit(token, answers, score);
-        console.log('[Audit Submit] Save result:', JSON.stringify(saveResult));
 
         if (!saveResult.success) {
             return res.status(500).json({ error: saveResult.error });
         }
 
-        // 4. Send Admin Access Email (so they can claim the site)
-        console.log('[Audit Submit] Checking email conditions...');
-        console.log('[Audit Submit]   audit.lead exists?', !!audit.lead);
-        console.log('[Audit Submit]   audit.lead?.primary_email?', audit.lead?.primary_email);
-        console.log('[Audit Submit]   audit.lead?.full_name?', audit.lead?.full_name);
-        console.log('[Audit Submit]   audit.lead?.website_slug?', audit.lead?.website_slug);
+        // Note: Admin access email is triggered automatically by the
+        // Resend email.clicked webhook in webhooks.ts when the agent
+        // first clicks the audit email link.
 
-        if (audit.lead && audit.lead.primary_email) {
-            console.log('[Audit Submit] ✅ Conditions met, sending admin access email...');
-            try {
-                const { sendAdminAccessEmail } = await import('../services/email');
-                const CLIENT_URL = process.env.VITE_APP_URL || 'https://siteo.io';
-                const slug = audit.lead.website_slug || audit.lead_id;
-                const adminUrl = `${CLIENT_URL}/w/${slug}/admin?source=email`;
-                const password = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
-
-                console.log('[Audit Submit] Email params:', {
-                    agentName: audit.lead.full_name,
-                    agentEmail: audit.lead.primary_email,
-                    adminUrl,
-                    password: '***'
-                });
-
-                const emailResult = await sendAdminAccessEmail({
-                    agentName: audit.lead.full_name,
-                    agentEmail: audit.lead.primary_email,
-                    adminUrl,
-                    defaultPassword: password
-                });
-
-                console.log('[Audit Submit] Email result:', JSON.stringify(emailResult));
-            } catch (emailErr: any) {
-                console.error('[Audit Submit] ❌ Email send exception:', emailErr.message);
-            }
-        } else {
-            console.log('[Audit Submit] ⚠️ SKIPPED email: conditions not met');
-            if (!audit.lead) {
-                console.log('[Audit Submit]   → audit.lead is falsy (null/undefined)');
-            } else if (!audit.lead.primary_email) {
-                console.log('[Audit Submit]   → primary_email is falsy:', audit.lead.primary_email);
-            }
-        }
-
-        console.log('[Audit Submit] ===== DONE =====');
         res.json({
             success: true,
             results: {
