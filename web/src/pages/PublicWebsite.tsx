@@ -378,24 +378,25 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                 )}
 
                 {/* Preview Notice Subtitle (One-time) */}
+                {/* Preview Notice Subtitle (One-time) */}
                 {showPreviewNotice && (
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="fixed top-24 left-0 right-0 z-40 pointer-events-none flex justify-center px-4"
+                        className="fixed top-24 left-0 right-0 z-[100] pointer-events-none flex justify-center px-4"
                     >
-                        <div className="bg-white/90 backdrop-blur-md border border-indigo-100 shadow-xl rounded-full px-6 py-2.5 flex items-center gap-3 pointer-events-auto">
-                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                                <BadgeCheck className="w-3.5 h-3.5 text-green-600" />
+                        <div className="bg-white/95 backdrop-blur-xl border border-indigo-200 shadow-2xl rounded-full px-8 py-4 flex items-center gap-4 pointer-events-auto transform hover:scale-[1.02] transition-transform">
+                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <BadgeCheck className="w-5 h-5 text-green-600" />
                             </div>
-                            <div className="text-sm font-medium text-slate-700">
-                                Private Access Enabled. <span className="text-slate-500 font-normal">Your secure admin link has been sent to your email.</span>
+                            <div className="text-base font-medium text-slate-800">
+                                Private Access Enabled. <span className="text-slate-600 font-normal">Your secure admin link has been sent to your email.</span>
                             </div>
                             <button
                                 onClick={handleDismissNotice}
-                                className="ml-2 text-slate-400 hover:text-slate-600 transition-colors"
+                                className="ml-2 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition-colors"
                             >
-                                <Minus className="w-4 h-4" />
+                                <Minus className="w-5 h-5" />
                             </button>
                         </div>
                     </motion.div>
