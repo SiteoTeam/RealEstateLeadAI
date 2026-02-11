@@ -551,7 +551,8 @@ export async function getAuditByToken(token: string): Promise<{ success: boolean
                 lead:lead_id (
                     full_name,
                     brokerage,
-                    website_slug
+                    website_slug,
+                    primary_email
                 )
             `)
             .eq('token', token)
