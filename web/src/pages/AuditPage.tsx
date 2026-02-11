@@ -581,7 +581,7 @@ export function AuditPage() {
 
                         <div className="pt-8">
                             <a
-                                href={audit.websiteSlug ? `/w/${audit.websiteSlug}` : '#'}
+                                href={audit.websiteSlug ? `/w/${audit.websiteSlug}?source=audit` : '#'}
                                 className="group relative bg-slate-900 text-white font-bold text-lg py-4 px-8 rounded-xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 inline-flex items-center gap-3 overflow-hidden"
                             >
                                 <span className="relative z-10 flex items-center justify-center gap-2">

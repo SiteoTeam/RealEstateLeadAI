@@ -172,6 +172,21 @@ router.post('/:token/submit', checkAuditFeature, async (req, res) => {
             return res.status(500).json({ error: saveResult.error });
         }
 
+        // 4. Send Admin Access Email (so they can claim the site)
+        if (audit.lead && audit.lead.primary_email) {
+            const { sendAdminAccessEmail } = await import('../services/email');
+            const CLIENT_URL = process.env.VITE_APP_URL || 'https://siteo.io';
+            const slug = audit.lead.website_slug || audit.lead.id;
+
+            // Send in background, don't await/block response
+            sendAdminAccessEmail({
+                agentName: audit.lead.full_name,
+                agentEmail: audit.lead.primary_email,
+                adminUrl: `${CLIENT_URL}/w/${slug}/admin?source=email`,
+                defaultPassword: process.env.DEFAULT_AGENT_PASSWORD || 'welcome123'
+            }).catch(e => console.error('[Audit API] Failed to send admin access email:', e));
+        }
+
         res.json({
             success: true,
             results: {
