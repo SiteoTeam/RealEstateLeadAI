@@ -59,25 +59,38 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
         return days > 30
     }
 
+    // Status rank for determining highest engagement across all logs
+    const STATUS_RANK: Record<string, number> = {
+        sent: 0, delivered: 1, delivery_delayed: 1,
+        opened: 2, clicked: 3,
+        bounced: -1, failed: -1, suppressed: -1, complained: -1
+    }
+
     const getStage = (lead: DBProfile): Stage => {
         if (lead.is_paid) return 'Paid'
         if (!lead.is_paid && isTrialExpired(lead)) return 'Expired'
         if (lead.website_config?.custom_domain) return 'Connected'
 
-        const sortedLogs = getSortedLeadLogs(lead)
-        const latestLog = sortedLogs[0]
+        const allLogs = getSortedLeadLogs(lead)
+        if (allLogs.length === 0) return 'New'
 
-        // If no logs, hidden
-        if (!latestLog) return 'New'
+        // Check if ANY log has bounced/failed (terminal errors)
+        const hasBounce = allLogs.some(l => ['bounced', 'failed', 'suppressed'].includes(l.status))
+        if (hasBounce) return 'Bounced'
 
-        // Classify based ONLY on the LATEST log status
-        if (latestLog.status === 'clicked') return 'Clicked'
-        if (latestLog.status === 'opened') return 'Opened'
-        if (['bounced', 'failed', 'suppressed'].includes(latestLog.status)) return 'Bounced'
+        // Find the HIGHEST status across ALL logs for this lead
+        let highestRank = -Infinity
+        let highestStatus = 'sent'
+        for (const log of allLogs) {
+            const rank = STATUS_RANK[log.status] ?? 0
+            if (rank > highestRank) {
+                highestRank = rank
+                highestStatus = log.status
+            }
+        }
 
-        // Default to Delivered for any other status (sent, delivered, queued, etc)
-        // This ensures the lead moves to 'Delivered' when a new email is sent, 
-        // regardless of historical clicks/opens on OLD emails.
+        if (highestStatus === 'clicked') return 'Clicked'
+        if (highestStatus === 'opened') return 'Opened'
         return 'Delivered'
     }
 

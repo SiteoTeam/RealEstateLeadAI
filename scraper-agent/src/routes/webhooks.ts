@@ -63,27 +63,83 @@ router.post('/resend', async (req, res) => {
             case 'email.delivery_delayed': status = 'delivery_delayed'; break;
             case 'email.complained': status = 'complained'; break;
             case 'email.bounced': status = 'bounced'; break;
-            case 'email.suppressed': status = 'bounced'; break; // Treat suppression as bounce
+            case 'email.suppressed': status = 'bounced'; break;
             case 'email.opened': status = 'opened'; break;
             case 'email.clicked': status = 'clicked'; break;
-            default: status = 'sent'; // active/unknown
+            default: status = 'sent';
         }
 
-        console.log(`[Webhook] Updating status to ${status} for ${data.email_id}`);
+        // Status hierarchy — never downgrade (e.g. 'opened' arriving after 'clicked')
+        const STATUS_RANK: Record<string, number> = {
+            sent: 0, delivered: 1, delivery_delayed: 1,
+            opened: 2, clicked: 3,
+            bounced: -1, complained: -1, suppressed: -1
+        };
+
+        // Fetch current log to check existing status
+        const { data: currentLog } = await db
+            .from('email_logs')
+            .select('lead_id, status')
+            .eq('resend_id', data.email_id)
+            .single();
+
+        if (!currentLog) {
+            console.warn(`[Webhook] No log found for resend_id ${data.email_id}`);
+            return res.status(404).json({ message: 'Log not found' });
+        }
+
+        const currentRank = STATUS_RANK[currentLog.status] ?? 0;
+        const newRank = STATUS_RANK[status] ?? 0;
+        const isTerminal = newRank < 0; // bounced/complained always applies
+
+        if (!isTerminal && newRank <= currentRank) {
+            console.log(`[Webhook] Skipping downgrade: ${currentLog.status}(${currentRank}) → ${status}(${newRank})`);
+            // Still return success — we processed it, just didn't need to update
+            // But we DO need updatedLog for the click handler below
+            const updatedLog = currentLog;
+            // Skip to click handler check
+            if (type === 'email.clicked' && updatedLog?.lead_id) {
+                // Already at clicked or higher, but still check trial trigger
+                const { data: lead } = await db
+                    .from('scraped_agents')
+                    .select('id, full_name, primary_email, website_slug, trial_started_at')
+                    .eq('id', updatedLog.lead_id)
+                    .single();
+
+                if (lead && !lead.trial_started_at) {
+                    console.log(`[Webhook] First click for ${lead.full_name}. Starting trial...`);
+                    await db.from('scraped_agents')
+                        .update({ trial_started_at: new Date().toISOString() })
+                        .eq('id', updatedLog.lead_id);
+
+                    if (lead.primary_email && lead.website_slug) {
+                        const { sendAdminAccessEmail } = await import('../services/email');
+                        const CLIENT_URL = process.env.CLIENT_URL || 'https://siteo.io';
+                        const DEFAULT_PASSWORD = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
+                        await sendAdminAccessEmail({
+                            agentName: lead.full_name,
+                            agentEmail: lead.primary_email,
+                            adminUrl: `${CLIENT_URL}/w/${lead.website_slug}/admin?source=email`,
+                            defaultPassword: DEFAULT_PASSWORD
+                        });
+                    }
+                }
+            }
+            return res.json({ success: true, skipped: true });
+        }
+
+        console.log(`[Webhook] Updating status: ${currentLog.status} → ${status} for ${data.email_id}`);
 
         // Update the log entry by resend_id
         const { data: updatedLog, error } = await db
             .from('email_logs')
-            .update({
-                status: status
-            })
+            .update({ status })
             .eq('resend_id', data.email_id)
             .select('lead_id, status')
             .single();
 
         if (error) {
             console.error('[Webhook] DB Update Error:', error);
-            // Return 404 so Resend retries (handling race condition where webhook arrives before insert)
             return res.status(404).json({ message: 'Log not found or update failed' });
         }
 
