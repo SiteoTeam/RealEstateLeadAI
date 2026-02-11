@@ -35,6 +35,12 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
         // Debug log
         console.log('[PreviewNotice] Check:', { source, hasSeen })
 
+        // Force show if source is 'debug'
+        if (source === 'debug') {
+            setShowPreviewNotice(true)
+            return
+        }
+
         if ((source === 'email' || source === 'audit') && !hasSeen) {
             console.log('[PreviewNotice] Showing notice')
             setShowPreviewNotice(true)
