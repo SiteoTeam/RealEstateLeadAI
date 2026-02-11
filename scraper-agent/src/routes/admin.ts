@@ -212,9 +212,9 @@ router.post('/notify-agent/:id', verifySupabaseUser, async (req, res) => {
         const safeSlug = slug || id;
         const websiteUrl = customDomain
             ? `https://${customDomain}`
-            : `${CLIENT_URL}/w/${safeSlug}`;
+            : `${CLIENT_URL}/w/${safeSlug}?source=email`;
 
-        const adminUrl = `${CLIENT_URL}/w/${safeSlug}/admin/login`;
+        const adminUrl = `${CLIENT_URL}/w/${safeSlug}/admin/login?source=email`;
 
         // Get default password from env or constant
         // Note: In a real app we might not send this if they've already logged in, 
@@ -351,8 +351,8 @@ router.post('/trigger-batch', verifySupabaseUser, async (req, res) => {
             const emailData = {
                 agentName: lead.full_name,
                 agentEmail: lead.primary_email,
-                websiteUrl: `${CLIENT_URL}/w/${safeSlug}`,
-                adminUrl: `${CLIENT_URL}/w/${safeSlug}/admin/login`,
+                websiteUrl: `${CLIENT_URL}/w/${safeSlug}?source=email`,
+                adminUrl: `${CLIENT_URL}/w/${safeSlug}/admin/login?source=email`,
                 defaultPassword: process.env.DEFAULT_AGENT_PASSWORD || 'welcome123',
                 leadId: lead.id
             };
@@ -442,7 +442,7 @@ router.post('/cron/trial-expiry-reminders', async (req, res) => {
             const result = await sendTrialExpiryReminderEmail({
                 agentName: agent.full_name,
                 agentEmail: agent.primary_email,
-                adminUrl: `${CLIENT_URL}/w/${agent.website_slug}/admin`,
+                adminUrl: `${CLIENT_URL}/w/${agent.website_slug}/admin?source=email`,
                 daysLeft: REMINDER_DAYS_BEFORE
             });
 
