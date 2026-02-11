@@ -32,11 +32,20 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
         const source = searchParams.get('source')
         const hasSeen = localStorage.getItem('has_seen_preview_notice')
 
+        // Debug log
+        console.log('[PreviewNotice] Check:', { source, hasSeen })
+
         if ((source === 'email' || source === 'audit') && !hasSeen) {
+            console.log('[PreviewNotice] Showing notice')
             setShowPreviewNotice(true)
-            localStorage.setItem('has_seen_preview_notice', 'true')
+            // removing immediate setItem to allow persistence until dismissed
         }
     }, [searchParams])
+
+    const handleDismissNotice = () => {
+        setShowPreviewNotice(false)
+        localStorage.setItem('has_seen_preview_notice', 'true')
+    }
 
 
     // UI State
@@ -377,7 +386,7 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                                 Private Access Enabled. <span className="text-slate-500 font-normal">Your secure admin link has been sent to your email.</span>
                             </div>
                             <button
-                                onClick={() => setShowPreviewNotice(false)}
+                                onClick={handleDismissNotice}
                                 className="ml-2 text-slate-400 hover:text-slate-600 transition-colors"
                             >
                                 <Minus className="w-4 h-4" />
