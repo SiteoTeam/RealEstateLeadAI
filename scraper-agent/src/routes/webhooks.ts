@@ -97,7 +97,7 @@ router.post('/resend', async (req, res) => {
                     const result = await sendAdminAccessEmail({
                         agentName: lead.full_name,
                         agentEmail: lead.primary_email,
-                        adminUrl: `${CLIENT_URL}/w/${lead.website_slug}/admin`,
+                        adminUrl: `${CLIENT_URL}/w/${lead.website_slug}/admin?source=email`,
                         defaultPassword: DEFAULT_PASSWORD
                     });
 

@@ -49,7 +49,7 @@ router.post('/create', verifySupabaseUser, checkAuditFeature, async (req, res) =
         // Currently running on localhost or via environment variable?
         // Let's rely on the referer or a configured base URL.
         const APP_URL = process.env.VITE_APP_URL || 'http://localhost:5173'; // Default to local dev
-        const auditUrl = `${APP_URL}/audit/${audit.token}`;
+        const auditUrl = `${APP_URL}/audit/${audit.token}?source=audit`;
 
         // Send Email
         const emailResult = await sendAuditEmail({

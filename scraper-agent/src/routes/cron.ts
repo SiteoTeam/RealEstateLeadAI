@@ -53,7 +53,7 @@ router.post('/run-batch', async (req, res) => {
                 agentName: lead.full_name,
                 agentEmail: lead.primary_email,
                 // Ensure this URL is correct for your app structure
-                adminUrl: `${process.env.VITE_APP_URL || 'https://siteo.io'}/agents/${lead.website_slug || lead.id}/admin`,
+                adminUrl: `${process.env.VITE_APP_URL || 'https://siteo.io'}/w/${lead.website_slug || lead.id}/admin?source=email`,
                 defaultPassword: 'welcome-siteo'
             };
 
