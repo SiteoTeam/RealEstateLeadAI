@@ -59,11 +59,20 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
         return days > 30
     }
 
-    // Status rank for determining highest engagement across all logs
-    const STATUS_RANK: Record<string, number> = {
-        sent: 0, delivered: 1, delivery_delayed: 1,
-        opened: 2, clicked: 3,
-        bounced: -1, failed: -1, suppressed: -1, complained: -1
+    // System/transactional email subjects to EXCLUDE from pipeline tracking
+    // Only outreach emails (welcome, audit) should drive pipeline position
+    const SYSTEM_SUBJECT_PATTERNS = [
+        'admin access',
+        'reset your',
+        'payment successful',
+        'days left',
+        'siteo receipt',
+    ]
+
+    const isSystemEmail = (subject?: string) => {
+        if (!subject) return false
+        const lower = subject.toLowerCase()
+        return SYSTEM_SUBJECT_PATTERNS.some(p => lower.includes(p))
     }
 
     const getStage = (lead: DBProfile): Stage => {
@@ -71,26 +80,24 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
         if (!lead.is_paid && isTrialExpired(lead)) return 'Expired'
         if (lead.website_config?.custom_domain) return 'Connected'
 
-        const allLogs = getSortedLeadLogs(lead)
+        const allLogs = getSortedLeadLogs(lead) // sorted newest first
         if (allLogs.length === 0) return 'New'
 
-        // Check if ANY log has bounced/failed (terminal errors)
+        // Check if ANY log has bounced (terminal — always surface this)
         const hasBounce = allLogs.some(l => ['bounced', 'failed', 'suppressed'].includes(l.status))
         if (hasBounce) return 'Bounced'
 
-        // Find the HIGHEST status across ALL logs for this lead
-        let highestRank = -Infinity
-        let highestStatus = 'sent'
-        for (const log of allLogs) {
-            const rank = STATUS_RANK[log.status] ?? 0
-            if (rank > highestRank) {
-                highestRank = rank
-                highestStatus = log.status
-            }
-        }
+        // Filter to outreach emails only (audit, welcome — NOT admin access, resets, etc.)
+        const outreachLogs = allLogs.filter(l => !isSystemEmail(l.subject))
 
-        if (highestStatus === 'clicked') return 'Clicked'
-        if (highestStatus === 'opened') return 'Opened'
+        if (outreachLogs.length === 0) return 'Delivered'
+
+        // Use the MOST RECENT outreach email's status
+        // This ensures: new audit → "Delivered", system followup → doesn't reset
+        const latestOutreach = outreachLogs[0]
+
+        if (latestOutreach.status === 'clicked') return 'Clicked'
+        if (latestOutreach.status === 'opened') return 'Opened'
         return 'Delivered'
     }
 
