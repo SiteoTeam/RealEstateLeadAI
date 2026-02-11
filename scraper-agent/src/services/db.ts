@@ -522,7 +522,7 @@ export async function createAudit(leadId: string): Promise<{ success: boolean; d
             .from('lead_audits')
             .insert({
                 lead_id: leadId,
-                token: crypto.randomBytes(32).toString('hex'), // Secure token
+                token: crypto.randomUUID(), // Cryptographically random UUID (matches DB column type)
                 status: 'pending',
                 expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
             })
