@@ -79,7 +79,7 @@ router.post('/resend', async (req, res) => {
         // Fetch current log to check existing status
         const { data: currentLog } = await db
             .from('email_logs')
-            .select('lead_id, status')
+            .select('lead_id, status, created_at')
             .eq('resend_id', data.email_id)
             .single();
 
@@ -92,25 +92,35 @@ router.post('/resend', async (req, res) => {
         const newRank = STATUS_RANK[status] ?? 0;
         const isTerminal = newRank < 0; // bounced/complained always applies
 
+        // 1. Hierarchy Check: Never downgrade status
         if (!isTerminal && newRank <= currentRank) {
             console.log(`[Webhook] Skipping downgrade: ${currentLog.status}(${currentRank}) → ${status}(${newRank})`);
-            // Still return success — we processed it, just didn't need to update
-            // But we DO need updatedLog for the click handler below
-            const updatedLog = currentLog;
-            // Skip to click handler check
-            if (type === 'email.clicked' && updatedLog?.lead_id) {
-                // Already at clicked or higher, but still check trial trigger
+
+            // Still check for click-based triggers (e.g. trial start) even if status didn't change
+            // (e.g. maybe it was already clicked, and they clicked again?)
+            // Actually, we only trigger trial on FIRST click.
+            // If it's already clicked, we might have already triggered it.
+            // But let's fall through to the logic below just in case.
+
+            // Wait, if we return here, we skip the update.
+            // But we might still want to trigger the side effects?
+            // The side effects are inside: if (type === 'email.clicked' && updatedLog?.lead_id)
+            // If we skip update, we don't have 'updatedLog' from the UPDATE query.
+            // But we have 'currentLog'.
+
+            if (type === 'email.clicked' && currentLog.lead_id) {
+                // Check trial trigger
                 const { data: lead } = await db
                     .from('scraped_agents')
                     .select('id, full_name, primary_email, website_slug, trial_started_at')
-                    .eq('id', updatedLog.lead_id)
+                    .eq('id', currentLog.lead_id)
                     .single();
 
                 if (lead && !lead.trial_started_at) {
                     console.log(`[Webhook] First click for ${lead.full_name}. Starting trial...`);
                     await db.from('scraped_agents')
                         .update({ trial_started_at: new Date().toISOString() })
-                        .eq('id', updatedLog.lead_id);
+                        .eq('id', currentLog.lead_id);
 
                     if (lead.primary_email && lead.website_slug) {
                         const { sendAdminAccessEmail } = await import('../services/email');
@@ -126,6 +136,16 @@ router.post('/resend', async (req, res) => {
                 }
             }
             return res.json({ success: true, skipped: true });
+        }
+
+        // 2. Bot Detection: Ignore rapid 'opened' events (< 15s)
+        if (status === 'opened' && currentLog.created_at) {
+            const sentTime = new Date(currentLog.created_at).getTime();
+            const timeDiff = Date.now() - sentTime;
+            if (timeDiff < 15000) { // 15 seconds
+                console.log(`[Webhook] Ignoring rapid open (${timeDiff}ms) - likely bot.`);
+                return res.json({ success: true, skipped: true, reason: 'rapid_open_bot' });
+            }
         }
 
         console.log(`[Webhook] Updating status: ${currentLog.status} → ${status} for ${data.email_id}`);

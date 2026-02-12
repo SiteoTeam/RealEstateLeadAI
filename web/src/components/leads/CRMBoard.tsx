@@ -3,6 +3,7 @@ import type { DBProfile } from '../../services/api'
 import type { EmailLog } from '../../types/email'
 import {
     CheckCircle,
+    Eye,
     MousePointerClick,
     Globe,
     DollarSign,
@@ -22,10 +23,11 @@ interface CRMBoardProps {
     onLeadDeleted?: (id: string) => void
 }
 
-type Stage = 'New' | 'Delivered' | 'Clicked' | 'Connected' | 'Paid' | 'Bounced' | 'Expired'
+type Stage = 'New' | 'Delivered' | 'Opened' | 'Clicked' | 'Connected' | 'Paid' | 'Bounced' | 'Expired'
 
 const STAGES: { id: Stage; label: string; icon: any; color: string; bg: string }[] = [
     { id: 'Delivered', label: 'Delivered', icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { id: 'Opened', label: 'Opened', icon: Eye, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
     { id: 'Clicked', label: 'Clicked', icon: MousePointerClick, color: 'text-purple-500', bg: 'bg-purple-500/10' },
     { id: 'Connected', label: 'Connected', icon: Globe, color: 'text-pink-500', bg: 'bg-pink-500/10' },
     { id: 'Paid', label: 'Paid', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
@@ -94,9 +96,7 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
         const latestOutreach = outreachLogs[0]
 
         if (latestOutreach.status === 'clicked') return 'Clicked'
-        // Treat 'opened' as 'Delivered' to avoid noise
-        if (latestOutreach.status === 'opened') return 'Delivered'
-
+        if (latestOutreach.status === 'opened') return 'Opened'
         return 'Delivered'
     }
 
