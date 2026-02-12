@@ -241,3 +241,19 @@ export async function cancelSubscription(leadId: string): Promise<{ success: boo
 
     return response.json()
 }
+
+/**
+ * Prune Expired Leads (Manual Admin Action)
+ */
+export async function pruneExpiredLeads(): Promise<{ success: boolean; deleted: number }> {
+    const response = await fetch(`${API_BASE}/api/admin/prune-expired`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+        throw new Error('Failed to prune expired leads')
+    }
+
+    return response.json()
+}

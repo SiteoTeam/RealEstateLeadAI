@@ -558,3 +558,137 @@ router.post('/cron/run-batch', async (req, res) => {
 });
 
 export const adminRoutes = router;
+
+// CRON: Prune Expired Trials (Delete unpaid agents > 30 days)
+// POST /api/admin/cron/prune-expired
+router.post('/cron/prune-expired', async (req, res) => {
+    try {
+        const cronSecret = req.headers['x-cron-secret'] || req.headers['authorization']?.replace('Bearer ', '');
+        const expectedSecret = process.env.CRON_SECRET;
+
+        if (expectedSecret && cronSecret !== expectedSecret) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const db = getDb();
+        if (!db) return res.status(500).json({ error: 'Database not available' });
+
+        const TRIAL_DURATION_DAYS = 30;
+
+        // Find agents whose trial started > 30 days ago AND are unpaid
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - TRIAL_DURATION_DAYS);
+
+        console.log(`[Cron] Pruning agents with trial started before ${cutoffDate.toISOString()}`);
+
+        const { data: expiredAgents, error } = await db
+            .from('scraped_agents')
+            .select('id, full_name, primary_email, website_slug')
+            .lt('trial_started_at', cutoffDate.toISOString())
+            .eq('is_paid', false);
+
+        if (error) throw error;
+
+        if (!expiredAgents || expiredAgents.length === 0) {
+            console.log('[Cron] No expired agents to prune.');
+            return res.json({ success: true, deleted: 0 });
+        }
+
+        console.log(`[Cron] Found ${expiredAgents.length} expired agents to prune.`);
+        let deletedCount = 0;
+
+        for (const agent of expiredAgents) {
+            console.log(`[Cron] Deleting expired agent: ${agent.full_name} (${agent.id})`);
+
+            // 1. Delete Storage Assets (if possible/needed)
+            // Note: Storage often requires listing files first.
+            // Simplified: Try to delete known potential files if usage pattern is predictable,
+            // or rely on manual cleanup. Getting full recursive delete is expensive here.
+            // We'll skip complex storage cleanup for V1 to ensure DB consistency first.
+
+            // 2. Delete Email Logs explicitly (in case CASCADE is missing)
+            await db.from('email_logs').delete().eq('lead_id', agent.id);
+            // Also delete by recipient email just in case lead_id wasn't linked?
+            // Safer to stick to lead_id to avoid deleting unrelated logs.
+
+            // 3. Delete the Agent (Cascades to lead_audits usually)
+            const { error: deleteError } = await db
+                .from('scraped_agents')
+                .delete()
+                .eq('id', agent.id);
+
+            if (deleteError) {
+                console.error(`[Cron] Failed to delete agent ${agent.id}:`, deleteError);
+            } else {
+                deletedCount++;
+            }
+        }
+
+        res.json({ success: true, deleted: deletedCount });
+
+    } catch (err: any) {
+        console.error('[Cron] Prune expired error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// MANUAL PRUNE: POST /api/admin/prune-expired
+// Secured by Session Auth (for Admin UI button)
+router.post('/prune-expired', verifySupabaseUser, async (req, res) => {
+    try {
+        // Authorization: Only platform admins 
+        // For now, any authenticated user (since this is single-tenant admin app effectively)
+
+        const db = getDb();
+        if (!db) return res.status(500).json({ error: 'Database not available' });
+
+        const TRIAL_DURATION_DAYS = 30;
+
+        // Find agents whose trial started > 30 days ago AND are unpaid
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - TRIAL_DURATION_DAYS);
+
+        console.log(`[Manual] Pruning agents with trial started before ${cutoffDate.toISOString()}`);
+
+        const { data: expiredAgents, error } = await db
+            .from('scraped_agents')
+            .select('id, full_name, primary_email, website_slug')
+            .lt('trial_started_at', cutoffDate.toISOString())
+            .eq('is_paid', false);
+
+        if (error) throw error;
+
+        if (!expiredAgents || expiredAgents.length === 0) {
+            console.log('[Manual] No expired agents to prune.');
+            return res.json({ success: true, deleted: 0 });
+        }
+
+        console.log(`[Manual] Found ${expiredAgents.length} expired agents to prune.`);
+        let deletedCount = 0;
+
+        for (const agent of expiredAgents) {
+            console.log(`[Manual] Deleting expired agent: ${agent.full_name} (${agent.id})`);
+
+            // 1. Delete Email Logs
+            await db.from('email_logs').delete().eq('lead_id', agent.id);
+
+            // 2. Delete Agent
+            const { error: deleteError } = await db
+                .from('scraped_agents')
+                .delete()
+                .eq('id', agent.id);
+
+            if (deleteError) {
+                console.error(`[Manual] Failed to delete agent ${agent.id}:`, deleteError);
+            } else {
+                deletedCount++;
+            }
+        }
+
+        res.json({ success: true, deleted: deletedCount });
+
+    } catch (err: any) {
+        console.error('[Manual] Prune expired error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});

@@ -160,6 +160,7 @@ export function EmailLogs() {
                             fetchData()
                         }
                     }}
+                    onRefresh={fetchData}
                 />
             </div>
 

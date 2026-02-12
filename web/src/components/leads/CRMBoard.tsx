@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import type { DBProfile } from '../../services/api'
+import { type DBProfile, pruneExpiredLeads } from '../../services/api'
 import type { EmailLog } from '../../types/email'
 import {
     CheckCircle,
@@ -21,6 +21,7 @@ interface CRMBoardProps {
     onSelectLead: (lead: DBProfile) => void
     loading: boolean
     onLeadDeleted?: (id: string) => void
+    onRefresh?: () => void
 }
 
 type Stage = 'New' | 'Delivered' | 'Opened' | 'Clicked' | 'Connected' | 'Paid' | 'Bounced' | 'Expired'
@@ -35,8 +36,9 @@ const STAGES: { id: Stage; label: string; icon: any; color: string; bg: string }
     { id: 'Bounced', label: 'Bounced', icon: Ban, color: 'text-red-500', bg: 'bg-red-500/10' },
 ]
 
-export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDeleted }: CRMBoardProps) {
+export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDeleted, onRefresh }: CRMBoardProps) {
     const [leadToDelete, setLeadToDelete] = useState<DBProfile | null>(null)
+    const [isPruning, setIsPruning] = useState(false)
 
     // Helper to get sorted logs for a lead (Latest first)
     const getSortedLeadLogs = (lead: DBProfile) => {
@@ -110,6 +112,20 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
         return <div className="p-10 text-center text-slate-500">Loading pipeline...</div>
     }
 
+    const handlePruneExpired = async () => {
+        if (!confirm('Are you sure you want to delete ALL unpublished (expired) agents? This cannot be undone.')) return
+        setIsPruning(true)
+        try {
+            const res = await pruneExpiredLeads()
+            alert(`Deleted ${res.deleted} expired agents.`)
+            if (onRefresh) onRefresh()
+        } catch (err: any) {
+            alert('Failed to prune: ' + err.message)
+        } finally {
+            setIsPruning(false)
+        }
+    }
+
     return (
         <div className="flex h-[calc(100vh-240px)] overflow-x-auto gap-4 pb-6 px-0 scrollbar-custom">
             {STAGES.map((stage) => {
@@ -124,9 +140,21 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
                                 <Icon className={`w-5 h-5 ${stage.color}`} />
                                 <span className={`font-semibold text-base ${stage.color}`}>{stage.label}</span>
                             </div>
-                            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-900/50 text-slate-400 border border-slate-800/50">
-                                {stageLeads.length}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                {stage.id === 'Expired' && stageLeads.length > 0 && (
+                                    <button
+                                        onClick={handlePruneExpired}
+                                        disabled={isPruning}
+                                        className="p-1 text-red-500 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
+                                        title="Delete All Expired Agents"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                )}
+                                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-900/50 text-slate-400 border border-slate-800/50">
+                                    {stageLeads.length}
+                                </span>
+                            </div>
                         </div>
 
                         {/* Column Content */}

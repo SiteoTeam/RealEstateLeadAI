@@ -1,0 +1,8 @@
+{
+  "agentId": "40ac9a69-89ff-4061-9bde-f9bd29738c19",
+  "reminderTest": true,
+  "paymentTest": true,
+  "expiryTest": true,
+  "expiryDays": 31.00000189814815,
+  "error": null
+}
