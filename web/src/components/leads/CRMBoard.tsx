@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { DeleteLeadModal } from './DeleteLeadModal'
 import { useState } from 'react'
+import { getStage, getSortedLeadLogs, type Stage } from '../../utils/crmStageLogic'
 
 interface CRMBoardProps {
     leads: DBProfile[]
@@ -24,8 +25,6 @@ interface CRMBoardProps {
     onLeadDeleted?: (id: string) => void
     onRefresh?: () => void
 }
-
-type Stage = 'New' | 'Delivered' | 'Opened' | 'Clicked' | 'LoggedIn' | 'Connected' | 'Paid' | 'Bounced' | 'Expired'
 
 const STAGES: { id: Stage; label: string; icon: any; color: string; bg: string }[] = [
     { id: 'Delivered', label: 'Delivered', icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -42,82 +41,12 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
     const [leadToDelete, setLeadToDelete] = useState<DBProfile | null>(null)
     const [isPruning, setIsPruning] = useState(false)
 
-    // Helper to get sorted logs for a lead (Latest first)
-    const getSortedLeadLogs = (lead: DBProfile) => {
-        const normalize = (email?: string | null) => email?.trim().toLowerCase() || ''
-        const leadEmail = normalize(lead.primary_email)
-        if (!leadEmail) return []
-
-        return emailLogs.filter(l =>
-            normalize(l.recipient) === leadEmail ||
-            (l.to && l.to.some(t => normalize(t) === leadEmail))
-        ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    }
-
-    const isTrialExpired = (lead: DBProfile) => {
-        if (!lead.trial_started_at) return false
-        const start = new Date(lead.trial_started_at)
-        const now = new Date()
-        const diff = now.getTime() - start.getTime()
-        const days = diff / (1000 * 60 * 60 * 24)
-        return days > 30
-    }
-
-    // System/transactional email subjects to EXCLUDE from pipeline tracking
-    // Only outreach emails (welcome, audit) should drive pipeline position
-    const SYSTEM_SUBJECT_PATTERNS = [
-        'admin access',
-        'reset your',
-        'payment successful',
-        'days left',
-        'siteo receipt',
-    ]
-
-    const isSystemEmail = (subject?: string) => {
-        if (!subject) return false
-        const lower = subject.toLowerCase()
-        return SYSTEM_SUBJECT_PATTERNS.some(p => lower.includes(p))
-    }
-
-    const getStage = (lead: DBProfile): Stage => {
-        if (lead.is_paid) return 'Paid'
-        if (!lead.is_paid && isTrialExpired(lead)) return 'Expired'
-        if (lead.website_config?.custom_domain) return 'Connected'
-        if (lead.last_login_at) return 'LoggedIn'
-
-        const allLogs = getSortedLeadLogs(lead) // sorted newest first
-        if (allLogs.length === 0) return 'New'
-
-        // Check if ANY log has bounced (terminal — always surface this)
-        const hasBounce = allLogs.some(l => ['bounced', 'failed', 'suppressed'].includes(l.status))
-        if (hasBounce) return 'Bounced'
-
-        // Filter to outreach emails only (audit, welcome — NOT admin access, resets, etc.)
-        const outreachLogs = allLogs.filter(l => !isSystemEmail(l.subject))
-
-        if (outreachLogs.length === 0) return 'Delivered'
-
-        // Use the HIGHEST status across ALL outreach emails
-        // This prevents regression when a new email is sent after a click/open
-        const STATUS_RANK: Record<string, number> = {
-            sent: 0, delivered: 1, delivery_delayed: 1,
-            opened: 2, clicked: 3
-        }
-
-        let highestRank = 0
-        for (const log of outreachLogs) {
-            const rank = STATUS_RANK[log.status] ?? 0
-            if (rank > highestRank) highestRank = rank
-        }
-
-        if (highestRank >= 3) return 'Clicked'
-        if (highestRank >= 2) return 'Opened'
-        return 'Delivered'
-    }
+    // Wrapper that passes emailLogs to the pure getStage function
+    const getLeadStage = (lead: DBProfile): Stage => getStage(lead, emailLogs)
 
     // Group leads by stage
     const columns = STAGES.reduce((acc, stage) => {
-        acc[stage.id] = leads.filter(l => getStage(l) === stage.id)
+        acc[stage.id] = leads.filter(l => getLeadStage(l) === stage.id)
         return acc
     }, {} as Record<Stage, DBProfile[]>)
 
@@ -174,7 +103,7 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
                         <div className="flex-1 overflow-y-auto space-y-3 p-3 scrollbar-thin">
                             {stageLeads.map((lead) => {
                                 // Find latest log for this lead to display subject
-                                const lastLog = getSortedLeadLogs(lead)[0]
+                                const lastLog = getSortedLeadLogs(lead, emailLogs)[0]
 
                                 return (
                                     <motion.div
