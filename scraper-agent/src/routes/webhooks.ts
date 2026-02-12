@@ -96,17 +96,8 @@ router.post('/resend', async (req, res) => {
         if (!isTerminal && newRank <= currentRank) {
             console.log(`[Webhook] Skipping downgrade: ${currentLog.status}(${currentRank}) → ${status}(${newRank})`);
 
-            // Still check for click-based triggers (e.g. trial start) even if status didn't change
-            // (e.g. maybe it was already clicked, and they clicked again?)
-            // Actually, we only trigger trial on FIRST click.
-            // If it's already clicked, we might have already triggered it.
-            // But let's fall through to the logic below just in case.
-
-            // Wait, if we return here, we skip the update.
-            // But we might still want to trigger the side effects?
-            // The side effects are inside: if (type === 'email.clicked' && updatedLog?.lead_id)
-            // If we skip update, we don't have 'updatedLog' from the UPDATE query.
-            // But we have 'currentLog'.
+            // Even if we skip the status update, still check click-based side effects
+            // (trial start, admin access email) in case they haven't fired yet
 
             if (type === 'email.clicked' && currentLog.lead_id) {
                 // Check trial trigger
