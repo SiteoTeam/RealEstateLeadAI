@@ -73,6 +73,22 @@ export function AdminDashboard() {
         init()
     }, [slug, navigate])
 
+    // Track Access from Email Links
+    useEffect(() => {
+        if (!slug) return
+
+        const params = new URLSearchParams(window.location.search)
+        const source = params.get('source')
+
+        if (source === 'email') {
+            const token = localStorage.getItem(`admin_token_${slug}`)
+            if (token) {
+                // Fire and forget - logs the access to update "Last Login"
+                adminApi.logAccess(token, 'email_link')
+            }
+        }
+    }, [slug])
+
     const handleLogout = () => {
         if (slug) localStorage.removeItem(`admin_token_${slug}`)
         navigate(`/w/${slug}/admin/login`)

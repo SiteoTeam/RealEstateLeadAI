@@ -264,4 +264,56 @@ router.get('/me', async (req, res) => {
     }
 });
 
+// LOG ACCESS (for email links / auto-logins)
+router.post('/log-access', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        const { source } = req.body;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const jwtSecret = process.env.JWT_SECRET || 'super-secret-key';
+
+        let payload: any;
+        try {
+            const jwt = await import('jsonwebtoken');
+            payload = jwt.default.verify(token, jwtSecret);
+        } catch (e) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        if (!payload || !payload.agentId) {
+            return res.status(401).json({ error: 'Invalid token payload' });
+        }
+
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        const userAgent = req.headers['user-agent'];
+
+        console.log(`[Auth] Logging access for agent ${payload.agentId} via source: ${source}`);
+
+        // Update last_login_at
+        await updateLead(payload.agentId, { last_login_at: new Date().toISOString() } as any);
+
+        // Log to login_logs
+        const { logLoginAttempt } = await import('../services/db');
+        await logLoginAttempt({
+            agent_id: payload.agentId,
+            slug: payload.slug || 'unknown', // Payload might need slug if available, else fetch?
+            ip_address: ip as string,
+            user_agent: userAgent,
+            status: 'success',
+            failure_reason: `Access via ${source || 'token'}`
+        }).catch(e => console.error('Failed to log access', e));
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error('[Auth] Log access error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;

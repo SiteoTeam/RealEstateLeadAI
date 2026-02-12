@@ -97,11 +97,21 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
 
         if (outreachLogs.length === 0) return 'Delivered'
 
-        // Use the MOST RECENT outreach email's status
-        const latestOutreach = outreachLogs[0]
+        // Use the HIGHEST status across ALL outreach emails
+        // This prevents regression when a new email is sent after a click/open
+        const STATUS_RANK: Record<string, number> = {
+            sent: 0, delivered: 1, delivery_delayed: 1,
+            opened: 2, clicked: 3
+        }
 
-        if (latestOutreach.status === 'clicked') return 'Clicked'
-        if (latestOutreach.status === 'opened') return 'Opened'
+        let highestRank = 0
+        for (const log of outreachLogs) {
+            const rank = STATUS_RANK[log.status] ?? 0
+            if (rank > highestRank) highestRank = rank
+        }
+
+        if (highestRank >= 3) return 'Clicked'
+        if (highestRank >= 2) return 'Opened'
         return 'Delivered'
     }
 

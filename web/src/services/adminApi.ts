@@ -254,5 +254,22 @@ export const adminApi = {
             throw new Error(err.message || err.error || 'Failed to send audit')
         }
         return response.json()
+    },
+
+    // Log Access (for analytics/tracking)
+    logAccess: async (token: string, source: string) => {
+        try {
+            await fetch(`${API_BASE}/api/agent/log-access`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ source }),
+            })
+        } catch (err) {
+            // Silently fail - analytics only
+            console.error('Failed to log access', err)
+        }
     }
 }
