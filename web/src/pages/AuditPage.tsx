@@ -226,7 +226,7 @@ export function AuditPage() {
     // 1. INTRO
     if (step === 'intro') {
         return (
-            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans selection:bg-indigo-100 selection:text-indigo-900 relative overflow-hidden">
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans selection:bg-indigo-100 selection:text-indigo-900 relative">
 
                 {/* Background Effects */}
                 <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
@@ -329,7 +329,7 @@ export function AuditPage() {
     // 2. QUESTIONS
     if (step === 'questions') {
         return (
-            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans selection:bg-indigo-100 selection:text-indigo-900 relative overflow-hidden">
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans selection:bg-indigo-100 selection:text-indigo-900 relative">
 
                 {/* Background Effects */}
                 <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
@@ -513,10 +513,10 @@ export function AuditPage() {
     // ... (rest of logic) ...
 
     return (
-        <div className="h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden flex flex-col relative selection:bg-indigo-100 selection:text-indigo-900">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col relative selection:bg-indigo-100 selection:text-indigo-900">
 
             {/* Background Effects */}
-            <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+            <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-indigo-300 rounded-full blur-[120px] opacity-30 animate-pulse"></div>
                 <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-300 rounded-full blur-[120px] opacity-30 animate-pulse delay-1000"></div>
                 {/* Simple Grid Pattern using radial gradient */}
@@ -524,42 +524,42 @@ export function AuditPage() {
             </div>
 
             {/* Nav */}
-            <nav className="relative z-20 bg-white/70 backdrop-blur-md border-b border-slate-200/50 px-8 py-4 flex justify-between items-center shrink-0">
-                <div className="font-bold text-xl tracking-tight flex items-center gap-2">
-                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
-                    <span>Site<span className="text-indigo-600">o</span> Audit</span>
+            <nav className="relative z-20 bg-white/70 backdrop-blur-md border-b border-slate-200/50 px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+                <div className="font-bold text-2xl tracking-tight flex items-center gap-2">
+                    {/* LOGO UPDATE: Removed Box S, just text */}
+                    <span>Site<span className="text-indigo-600">o</span></span>
                 </div>
-                <div className="text-sm font-medium text-slate-500 bg-white/50 border border-slate-200 px-3 py-1 rounded-full">
+                <div className="text-sm font-medium text-slate-500 bg-white/50 border border-slate-200 px-3 py-1 rounded-full text-center">
                     Prepared for <span className="text-slate-900">{audit.agentName}</span>
                 </div>
             </nav>
 
             {/* Main Dashboard Content - Split Screen */}
-            <main className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 p-6 lg:p-10 max-w-[1600px] mx-auto w-full h-full">
+            <main className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 p-4 md:p-6 lg:p-10 max-w-[1600px] mx-auto w-full pb-20">
 
                 {/* LEFT PANEL: The Diagnosis & Score */}
-                <div className="lg:col-span-5 flex flex-col justify-center lg:pr-8 animate-in slide-in-from-bottom-4 duration-700">
+                <div className="lg:col-span-5 flex flex-col justify-start lg:justify-center lg:pr-8 animate-in slide-in-from-bottom-4 duration-700">
 
                     {/* Score Ring Section */}
-                    <div className="flex items-center gap-8 mb-10">
-                        <div className="relative w-40 h-40 flex-shrink-0 flex items-center justify-center">
+                    <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 mb-8 md:mb-10 text-center md:text-left">
+                        <div className="relative w-32 h-32 md:w-40 md:h-40 flex-shrink-0 flex items-center justify-center mx-auto md:mx-0">
                             {/* Outer glow */}
                             <div className={`absolute inset-0 rounded-full blur-2xl opacity-20 ${scenario === 1 ? 'bg-emerald-400' : scenario === 2 ? 'bg-amber-400' : 'bg-red-400'}`}></div>
                             <svg className="w-full h-full transform -rotate-90 drop-shadow-md">
-                                <circle cx="80" cy="80" r="74" className="text-slate-200" strokeWidth="12" fill="none" stroke="currentColor" />
+                                <circle cx="50%" cy="50%" r="46%" className="text-slate-200" strokeWidth="12" fill="none" stroke="currentColor" />
                                 <circle
-                                    cx="80" cy="80" r="74"
+                                    cx="50%" cy="50%" r="46%"
                                     className={`${scoreColor} transition-all duration-1000 ease-out`}
                                     strokeWidth="12"
                                     fill="none"
                                     stroke="currentColor"
-                                    strokeDasharray={465}
+                                    strokeDasharray={465} // calculated for r=74 approx
                                     strokeDashoffset={465 - (465 * scoreDisplay) / 100}
                                     strokeLinecap="round"
                                 />
                             </svg>
                             <div className="absolute flex flex-col items-center animate-in zoom-in duration-700 delay-100">
-                                <span className={`text-5xl font-extrabold tracking-tighter ${scoreColor}`}>{scoreDisplay}</span>
+                                <span className={`text-4xl md:text-5xl font-extrabold tracking-tighter ${scoreColor}`}>{scoreDisplay}</span>
                                 <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1">Score</span>
                             </div>
                         </div>
@@ -567,22 +567,22 @@ export function AuditPage() {
                             <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 ${scenario === 1 ? 'bg-emerald-100 text-emerald-700' : scenario === 2 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                                 {scenario === 1 ? 'Excellent' : scenario === 2 ? 'Needs Work' : 'Critical'}
                             </div>
-                            <h2 className="text-4xl font-bold text-slate-900 leading-tight">Digital Health Check</h2>
+                            <h2 className="text-2xl md:text-4xl font-bold text-slate-900 leading-tight">Digital Health Check</h2>
                         </div>
                     </div>
 
-                    <div className="space-y-6">
-                        <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 leading-tight">
+                    <div className="space-y-4 md:space-y-6 text-center md:text-left">
+                        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 leading-tight">
                             {content.headline}
                         </h1>
-                        <p className="text-lg text-slate-600 leading-relaxed">
+                        <p className="text-base md:text-lg text-slate-600 leading-relaxed">
                             {content.subheadline}
                         </p>
 
-                        <div className="pt-8">
+                        <div className="pt-6 md:pt-8 pb-8 lg:pb-0">
                             <a
                                 href={audit.websiteSlug ? `/w/${audit.websiteSlug}?source=audit` : '#'}
-                                className="group relative bg-slate-900 text-white font-bold text-lg py-4 px-8 rounded-xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 inline-flex items-center gap-3 overflow-hidden"
+                                className="group relative bg-slate-900 text-white font-bold text-lg py-4 px-8 rounded-xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 inline-flex items-center justify-center w-full md:w-auto gap-3 overflow-hidden"
                             >
                                 <span className="relative z-10 flex items-center justify-center gap-2">
                                     Preview Custom Site
@@ -597,33 +597,34 @@ export function AuditPage() {
 
                 {/* RIGHT PANEL: Critical Cards */}
                 <div className="lg:col-span-7 flex flex-col justify-center h-full">
-                    <div className="grid grid-rows-3 gap-5 h-full max-h-[700px]">
+                    <div className="grid grid-cols-1 md:grid-rows-3 gap-4 md:gap-5 h-full auto-rows-min">
                         {content.cards.map((card, i) => (
                             <div
                                 key={i}
-                                className={`relative bg-white/80 backdrop-blur-sm p-6 rounded-2xl border transition-all duration-500 hover:shadow-lg hover:-translate-x-1 hover:bg-white group overflow-hidden flex flex-row items-center gap-6 animate-in fade-in slide-in-from-bottom-8 fill-mode-backwards ${card.passing
+                                className={`relative bg-white/80 backdrop-blur-sm p-4 md:p-6 rounded-2xl border transition-all duration-500 hover:shadow-lg hover:-translate-x-0 md:hover:-translate-x-1 hover:bg-white group overflow-hidden flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-8 fill-mode-backwards ${card.passing
                                     ? 'border-emerald-100 hover:border-emerald-200'
                                     : 'border-red-100 hover:border-red-200'
                                     }`}
                                 style={{ animationDelay: `${300 + (i * 150)}ms` }}
                             >
-                                {/* Side Indicator */}
-                                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${card.passing ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                                {/* Side Indicator - Mobile: Top, Desktop: Left */}
+                                <div className={`hidden md:block absolute left-0 top-0 bottom-0 w-1.5 ${card.passing ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                                <div className={`md:hidden absolute top-0 left-0 right-0 h-1.5 ${card.passing ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
 
                                 {/* Icon Box */}
-                                <div className={`w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center ${card.passing ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                                <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex-shrink-0 flex items-center justify-center mt-2 md:mt-0 ${card.passing ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                                     {card.passing ? (
-                                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                        <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                                     ) : (
-                                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                                     )}
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <h4 className="font-bold text-lg text-slate-800 truncate">{card.title}</h4>
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-2">
+                                        <h4 className="font-bold text-base md:text-lg text-slate-800 break-words">{card.title}</h4>
                                         {!card.passing && (
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 uppercase tracking-wide">
+                                            <span className="self-start md:self-auto px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 uppercase tracking-wide">
                                                 Critical
                                             </span>
                                         )}
