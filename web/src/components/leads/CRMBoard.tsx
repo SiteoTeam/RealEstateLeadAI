@@ -10,7 +10,8 @@ import {
     Ban,
     ExternalLink,
     Mail,
-    Trash2
+    Trash2,
+    LogIn
 } from 'lucide-react'
 import { DeleteLeadModal } from './DeleteLeadModal'
 import { useState } from 'react'
@@ -24,12 +25,13 @@ interface CRMBoardProps {
     onRefresh?: () => void
 }
 
-type Stage = 'New' | 'Delivered' | 'Opened' | 'Clicked' | 'Connected' | 'Paid' | 'Bounced' | 'Expired'
+type Stage = 'New' | 'Delivered' | 'Opened' | 'Clicked' | 'LoggedIn' | 'Connected' | 'Paid' | 'Bounced' | 'Expired'
 
 const STAGES: { id: Stage; label: string; icon: any; color: string; bg: string }[] = [
     { id: 'Delivered', label: 'Delivered', icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
     { id: 'Opened', label: 'Opened', icon: Eye, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
     { id: 'Clicked', label: 'Clicked', icon: MousePointerClick, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { id: 'LoggedIn', label: 'Logged In', icon: LogIn, color: 'text-orange-500', bg: 'bg-orange-500/10' },
     { id: 'Connected', label: 'Connected', icon: Globe, color: 'text-pink-500', bg: 'bg-pink-500/10' },
     { id: 'Paid', label: 'Paid', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     { id: 'Expired', label: 'Unpublished', icon: Ban, color: 'text-slate-500', bg: 'bg-slate-500/10' },
@@ -81,6 +83,7 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
         if (lead.is_paid) return 'Paid'
         if (!lead.is_paid && isTrialExpired(lead)) return 'Expired'
         if (lead.website_config?.custom_domain) return 'Connected'
+        if (lead.last_login_at) return 'LoggedIn'
 
         const allLogs = getSortedLeadLogs(lead) // sorted newest first
         if (allLogs.length === 0) return 'New'

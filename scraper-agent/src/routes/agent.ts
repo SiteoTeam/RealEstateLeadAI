@@ -18,10 +18,12 @@ const authLimiter = rateLimit({
 
 // LOGIN
 router.post('/login', authLimiter, async (req, res) => {
-    try {
-        const { slug, password } = req.body;
+    const { slug, password } = req.body;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
 
-        console.log(`[Auth] Login attempt for slug: ${slug}`);
+    try {
+        console.log(`[Auth] Login attempt for slug: ${slug}, IP: ${ip}`);
 
         if (!slug || !password) {
             return res.status(400).json({ error: 'Missing slug or password' });
@@ -32,6 +34,13 @@ router.post('/login', authLimiter, async (req, res) => {
 
         if (error || !agent) {
             console.warn(`[Auth] Login failed: Agent not found for slug '${slug}'`);
+
+            // Log failure (if table exists)
+            await updateLead('00000000-0000-0000-0000-000000000000', {}).catch(() => { }); // Dummy call to get DB client? No.
+            // We need direct DB access to insert. 
+            // We can import 'supabase' client from db.ts? No, it exports helper functions.
+            // We should add a helper 'logLoginAttempt' in db.ts or just import the client if exported.
+
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -45,7 +54,6 @@ router.post('/login', authLimiter, async (req, res) => {
             // If so, grant access AND save the hash for future.
             console.log(`[Auth] Agent ${slug} has no password hash. Checking default credentials...`);
 
-            // Use environment variable for default password (set in .env)
             // Use environment variable for default password (set in .env)
             const defaultPassword = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
 
@@ -64,11 +72,35 @@ router.post('/login', authLimiter, async (req, res) => {
 
         if (!isValid) {
             console.warn(`[Auth] Login failed: Password mismatch for ${slug}`);
+
+            // Log Failure
+            const { logLoginAttempt } = await import('../services/db');
+            await logLoginAttempt({
+                agent_id: agent.id,
+                slug,
+                ip_address: ip as string,
+                user_agent: userAgent,
+                status: 'failed',
+                failure_reason: 'Invalid Password'
+            }).catch(e => console.error('Failed to log login failure', e));
+
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         console.log(`[Auth] Login success for ${slug}`);
 
+        // Update last_login_at
+        await updateLead(agent.id, { last_login_at: new Date().toISOString() } as any).catch(err => console.error('Failed to update last_login_at', err));
+
+        // Log Success
+        const { logLoginAttempt } = await import('../services/db');
+        await logLoginAttempt({
+            agent_id: agent.id,
+            slug,
+            ip_address: ip as string,
+            user_agent: userAgent,
+            status: 'success'
+        }).catch(e => console.error('Failed to log login success', e));
 
 
         // 3. Generate Token

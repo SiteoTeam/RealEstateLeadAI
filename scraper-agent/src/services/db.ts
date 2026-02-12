@@ -596,3 +596,31 @@ export async function submitAudit(token: string, answers: any, score: number): P
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
 }
+
+/**
+ * Log login attempts (success or failure)
+ */
+export async function logLoginAttempt(data: {
+    agent_id?: string;
+    slug: string;
+    ip_address: string;
+    user_agent?: string;
+    status: 'success' | 'failed';
+    failure_reason?: string;
+}): Promise<void> {
+    const client = getSupabaseClient();
+    if (!client) return;
+
+    try {
+        await client.from('login_logs').insert({
+            agent_id: data.agent_id,
+            slug: data.slug,
+            ip_address: data.ip_address,
+            user_agent: data.user_agent,
+            status: data.status,
+            failure_reason: data.failure_reason
+        });
+    } catch (err) {
+        console.error('[DB] Failed to log login attempt:', err);
+    }
+}
