@@ -306,6 +306,12 @@ export function LeadsList() {
                                                     try {
                                                         await adminApi.sendAudit(selectedLead.id);
                                                         alert(`Audit sent to ${selectedLead.full_name}!`);
+                                                        // Update local state to move to "Emailed Leads"
+                                                        setLeads(prev => prev.map(l =>
+                                                            l.id === selectedLead.id
+                                                                ? { ...l, last_contacted_at: new Date().toISOString() }
+                                                                : l
+                                                        ))
                                                     } catch (err: any) {
                                                         alert('Failed to send audit: ' + (err.message || 'Unknown error'));
                                                     } finally {
