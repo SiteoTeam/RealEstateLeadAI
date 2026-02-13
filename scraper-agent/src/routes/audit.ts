@@ -1,7 +1,7 @@
 
 import express from 'express';
 import { verifySupabaseUser } from '../middleware/supabaseAuth';
-import { createAudit, getAuditByToken, submitAudit, isFeatureEnabled, markLeadAsContacted } from '../services/db';
+import { createAudit, getAuditByToken, submitAudit, isFeatureEnabled } from '../services/db';
 import { sendAuditEmail } from '../services/email';
 import { getLeadById } from '../services/db';
 import { CLIENT_URL } from '../utils/urls';
@@ -64,9 +64,6 @@ router.post('/create', verifySupabaseUser, checkAuditFeature, async (req, res) =
             // We return success: false for the UI to show an error, but the audit record exists.
             return res.status(500).json({ error: 'Audit created but email failed: ' + emailResult.error });
         }
-
-        // Mark lead as contacted
-        await markLeadAsContacted(leadId);
 
         res.json({ success: true, auditId: audit.id, message: 'Audit sent successfully' });
 

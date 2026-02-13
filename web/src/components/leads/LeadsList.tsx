@@ -135,6 +135,27 @@ export function LeadsList() {
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <button
                             onClick={async () => {
+                                if (!confirm('Send batch of 5 AUDITS to uncontacted leads?')) return;
+                                try {
+                                    setSendingEmail(true);
+                                    const res = await adminApi.triggerBatchAudit(5);
+                                    alert(`Batch Audit Complete!\nSent: ${res.stats.sent}\nFailed: ${res.stats.failed}`);
+                                    fetchData();
+                                } catch (err: any) {
+                                    alert('Error: ' + err.message);
+                                } finally {
+                                    setSendingEmail(false);
+                                }
+                            }}
+                            disabled={sendingEmail}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                            {sendingEmail ? 'Sending...' : 'Batch Audit'}
+                        </button>
+
+                        <button
+                            onClick={async () => {
                                 if (!confirm('Send batch of 5 emails to uncontacted leads?')) return;
                                 try {
                                     setSendingEmail(true);
@@ -285,14 +306,6 @@ export function LeadsList() {
                                                     try {
                                                         await adminApi.sendAudit(selectedLead.id);
                                                         alert(`Audit sent to ${selectedLead.full_name}!`);
-
-                                                        // Update local state to move to Emailed Leads immediately
-                                                        setLeads(prev => prev.map(l =>
-                                                            l.id === selectedLead.id
-                                                                ? { ...l, last_contacted_at: new Date().toISOString() }
-                                                                : l
-                                                        ))
-
                                                     } catch (err: any) {
                                                         alert('Failed to send audit: ' + (err.message || 'Unknown error'));
                                                     } finally {

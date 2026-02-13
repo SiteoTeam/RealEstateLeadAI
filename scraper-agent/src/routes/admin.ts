@@ -418,6 +418,89 @@ router.post('/trigger-batch', verifySupabaseUser, async (req, res) => {
     }
 });
 
+// TRIGGER BATCH AUDIT: POST /api/admin/trigger-batch-audit
+router.post('/trigger-batch-audit', verifySupabaseUser, async (req, res) => {
+    try {
+        console.log('[Admin] Manually triggering batch AUDIT process...');
+
+        // Dynamic imports
+        const { getUncontactedLeads, markLeadAsContacted, createAudit } = await import('../services/db');
+        const { sendAuditEmail } = await import('../services/email');
+
+        // Authorization: Only platform admins
+        if ((req as AuthenticatedRequest).user?.role === 'agent') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const batchSize = Math.min(Number(req.body.batchSize) || 5, 20);
+
+        const result = await getUncontactedLeads(batchSize);
+        if (!result.success || !result.data) {
+            return res.status(500).json({ error: result.error || 'Failed to fetch leads' });
+        }
+
+        const leads = result.data;
+        const stats = { sent: 0, failed: 0, skipped: 0 };
+        const logs: string[] = [];
+
+        if (leads.length === 0) {
+            return res.json({ message: 'No new leads to contact', stats, logs });
+        }
+
+        for (const lead of leads) {
+            if (!lead.primary_email || !lead.primary_email.includes('@')) {
+                stats.skipped++;
+                continue;
+            }
+
+            // 1. Create Audit
+            const auditRes = await createAudit(lead.id);
+            if (!auditRes.success || !auditRes.data) {
+                stats.failed++;
+                logs.push(`Failed to create audit for ${lead.primary_email}`);
+                continue;
+            }
+
+            const auditToken = auditRes.data.token;
+            // Use the audit details page or the audit visualization page?
+            // Usually /audit/:token
+            const auditUrl = `${CLIENT_URL}/audit/${auditToken}?source=email_batch`;
+
+            // 2. Send Audit Email
+            const emailData = {
+                agentName: lead.full_name,
+                agentEmail: lead.primary_email,
+                auditUrl: auditUrl,
+                leadId: lead.id
+            };
+
+            const sendResult = await sendAuditEmail(emailData);
+
+            if (sendResult.success) {
+                const updateResult = await markLeadAsContacted(lead.id);
+                if (updateResult.success) {
+                    stats.sent++;
+                    logs.push(`Audit Sent to ${lead.primary_email}`);
+                } else {
+                    stats.failed++;
+                    logs.push(`DB Update Failed for ${lead.primary_email}`);
+                }
+            } else {
+                stats.failed++;
+                logs.push(`Email Failed to ${lead.primary_email}: ${sendResult.error}`);
+            }
+
+            await new Promise(r => setTimeout(r, 500)); // Rate limit safety
+        }
+
+        res.json({ success: true, stats, logs });
+
+    } catch (err: any) {
+        console.error('[Admin] Trigger batch audit error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // CRON: Send Trial Expiry Reminders
 
 // CRON: Send Trial Expiry Reminders

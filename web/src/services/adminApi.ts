@@ -236,6 +236,25 @@ export const adminApi = {
         return response.json()
     },
 
+    triggerBatchAudit: async (batchSize: number = 5, token?: string) => {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : getAuthHeaders())
+        }
+
+        const response = await fetch(`${API_BASE}/api/admin/trigger-batch-audit`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ batchSize }),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}))
+            throw new Error(err.message || err.error || 'Failed to trigger batch audit')
+        }
+        return response.json()
+    },
+
     // Audit Feature
     sendAudit: async (leadId: string, token?: string) => {
         const headers: Record<string, string> = {
