@@ -418,6 +418,25 @@ export interface LeadUpdateData {
     password_hash?: string;
     is_paid?: boolean;
     trial_started_at?: string;
+    is_unsubscribed?: boolean;
+}
+
+export async function unsubscribeLead(id: string): Promise<{ success: boolean; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        const { error } = await client
+            .from('scraped_agents')
+            .update({ is_unsubscribed: true, updated_at: new Date().toISOString() })
+            .eq('id', id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (err) {
+        console.error('[DB] Error unsubscribing lead:', err);
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
 }
 
 export async function updateLead(

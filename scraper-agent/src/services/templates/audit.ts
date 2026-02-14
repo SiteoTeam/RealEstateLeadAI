@@ -1,8 +1,9 @@
 
 export const getAuditEmailHtml = (
-    agentName: string,
-    agentEmail: string,
-    auditUrl: string
+  agentName: string,
+  agentEmail: string,
+  auditUrl: string,
+  unsubscribeUrl?: string
 ) => `
 <!DOCTYPE html>
 <html>
@@ -83,6 +84,10 @@ export const getAuditEmailHtml = (
 
       <p style="margin:24px 0 0 0; color:#94a3b8; font-size:12px;">
         Sent to ${agentEmail}
+        ${unsubscribeUrl ? `
+        <br/><br/>
+        <a href="${unsubscribeUrl}" style="color:#94a3b8; text-decoration:underline;">Unsubscribe</a>
+        ` : ''}
       </p>
     </div>
 

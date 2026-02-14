@@ -65,6 +65,13 @@ router.post('/create', verifySupabaseUser, checkAuditFeature, async (req, res) =
             return res.status(500).json({ error: 'Audit created but email failed: ' + emailResult.error });
         }
 
+        // Mark as contacted
+        const { markLeadAsContacted } = await import('../services/db');
+        const updateResult = await markLeadAsContacted(leadId);
+        if (!updateResult.success) {
+            console.error('[Audit API] Failed to update lead status:', updateResult.error);
+        }
+
         res.json({ success: true, auditId: audit.id, message: 'Audit sent successfully' });
 
     } catch (err: any) {

@@ -222,7 +222,14 @@ export function LeadsList() {
                                                 <h3 className={`font-semibold truncate transition-colors ${selectedLead?.id === lead.id ? 'text-indigo-400' : 'text-white group-hover:text-indigo-400'}`}>
                                                     {lead.full_name}
                                                 </h3>
-                                                <p className="text-xs text-slate-400 truncate mt-0.5">{lead.brokerage}</p>
+                                                <p className="text-xs text-slate-400 truncate mt-0.5 flex items-center gap-2">
+                                                    {lead.brokerage}
+                                                    {lead.is_unsubscribed && (
+                                                        <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider">
+                                                            Unsubscribed
+                                                        </span>
+                                                    )}
+                                                </p>
                                             </div>
 
                                             <div className="sm:col-span-4 flex items-center gap-2 text-sm text-slate-300">
@@ -290,8 +297,12 @@ export function LeadsList() {
                                         <div className="space-y-3">
                                             <button
                                                 onClick={() => handleSendWelcome(selectedLead)}
-                                                disabled={sendingEmail}
-                                                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                disabled={sendingEmail || selectedLead.is_unsubscribed}
+                                                className={`w-full py-3 px-4 font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${selectedLead.is_unsubscribed
+                                                    ? 'bg-slate-800 text-slate-500 shadow-none'
+                                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20'
+                                                    }`}
+                                                title={selectedLead.is_unsubscribed ? 'User has unsubscribed' : ''}
                                             >
                                                 {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                                                 {sendingEmail ? 'Sending...' : 'Send Welcome Email'}
@@ -306,20 +317,30 @@ export function LeadsList() {
                                                     try {
                                                         await adminApi.sendAudit(selectedLead.id);
                                                         alert(`Audit sent to ${selectedLead.full_name}!`);
+
+                                                        const now = new Date().toISOString();
+
+                                                        // Update the selected lead state immediately
+                                                        setSelectedLead(prev => prev ? ({ ...prev, last_contacted_at: now }) : null);
+
                                                         // Update local state to move to "Emailed Leads"
                                                         setLeads(prev => prev.map(l =>
                                                             l.id === selectedLead.id
-                                                                ? { ...l, last_contacted_at: new Date().toISOString() }
+                                                                ? { ...l, last_contacted_at: now }
                                                                 : l
-                                                        ))
+                                                        ));
                                                     } catch (err: any) {
                                                         alert('Failed to send audit: ' + (err.message || 'Unknown error'));
                                                     } finally {
                                                         setSendingEmail(false);
                                                     }
                                                 }}
-                                                disabled={sendingEmail}
-                                                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                disabled={sendingEmail || selectedLead.is_unsubscribed}
+                                                className={`w-full py-3 px-4 font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${selectedLead.is_unsubscribed
+                                                    ? 'bg-slate-800 text-slate-500 shadow-none'
+                                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                                                    }`}
+                                                title={selectedLead.is_unsubscribed ? 'User has unsubscribed' : ''}
                                             >
                                                 {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
                                                 Send Free Audit

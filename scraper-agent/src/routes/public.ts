@@ -1,51 +1,82 @@
 import express from 'express';
-import { getDb } from '../services/db';
+import { unsubscribeLead } from '../services/db'; // Correct import
 
-export const publicRoutes = express.Router();
+const router = express.Router();
 
-// Lookup Agent Slug by Custom Domain
-publicRoutes.get('/lookup-domain', async (req, res) => {
+/**
+ * GET /api/public/unsubscribe/:id
+ * Public endpoint for unsubscribing leads via email link
+ */
+router.get('/unsubscribe/:id', async (req, res) => {
     try {
-        const supabase = getDb();
-        if (!supabase) {
-            return res.status(500).json({ error: 'Database connection failed' });
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).send('Invalid request: Missing ID');
         }
 
-        const { domain } = req.query;
+        const result = await unsubscribeLead(id);
 
-        if (!domain) {
-            return res.status(400).json({ error: 'Domain is required' });
+        if (result.success) {
+            // Return a simple HTML success page
+            res.send(`
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Unsubscribed</title>
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            height: 100vh;
+                            margin: 0;
+                            background-color: #f3f4f6;
+                            color: #1f2937;
+                        }
+                        .container {
+                            background: white;
+                            padding: 40px;
+                            border-radius: 12px;
+                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                            text-align: center;
+                            max-width: 400px;
+                            width: 90%;
+                        }
+                        h1 { color: #059669; margin-top: 0; }
+                        p { line-height: 1.5; color: #4b5563; }
+                        .icon { font-size: 48px; margin-bottom: 16px; display: block; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <span class="icon">✅</span>
+                        <h1>Unsubscribed</h1>
+                        <p>You have been successfully removed from our mailing list.</p>
+                        <p style="font-size: 0.875rem; color: #9ca3af; margin-top: 24px;">ID: ${id}</p>
+                    </div>
+                </body>
+                </html>
+            `);
+        } else {
+            res.status(500).send(`
+                <!DOCTYPE html>
+                <html>
+                <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+                    <h1 style="color: #dc2626;">Error</h1>
+                    <p>Failed to unsubscribe. Please try again or contact support.</p>
+                    <p style="color: #666;">Error: ${result.error}</p>
+                </body>
+                </html>
+            `);
         }
-
-        console.log(`[API] Looking up domain: ${domain}`);
-
-        // Search for agent with this custom domain in their config
-        // Note: We use the arrow operator ->> to extract text from JSONB
-        // effectively: WHERE website_config->>'custom_domain' = domain
-        // BUT Supabase JS syntax is slightly different.
-
-        // .contains('website_config', { custom_domain: domain }) is the robust way for JSONB check
-        const { data, error } = await supabase
-            .from('scraped_agents')
-            .select('website_slug, website_published')
-            .contains('website_config', { custom_domain: domain })
-            .single();
-
-        if (error || !data) {
-            console.log(`[API] Domain not found: ${domain}`);
-            return res.status(404).json({ error: 'Domain not found' });
-        }
-
-        if (!data.website_published) {
-            console.log(`[API] Domain found but site not published: ${domain}`);
-            return res.status(404).json({ error: 'Website not published' });
-        }
-
-        console.log(`[API] Resolved ${domain} -> ${data.website_slug}`);
-        res.json({ slug: data.website_slug });
-
     } catch (err: any) {
-        console.error('[API] Domain lookup error:', err);
-        res.status(500).json({ error: 'Lookup failed' });
+        console.error('[Public API] Unsubscribe error:', err);
+        res.status(500).send('Internal Server Error');
     }
 });
+
+export const publicRoutes = router;

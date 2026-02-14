@@ -39,6 +39,7 @@ export interface DBProfile {
     stripe_customer_id?: string | null // Added for Billing Portal
     trial_started_at?: string | null // Added for Trial Logic
     last_contacted_at?: string | null // Added for Emailed Leads
+    is_unsubscribed?: boolean // Added for Unsubscribe Logic
     created_at: string
     updated_at: string
 }

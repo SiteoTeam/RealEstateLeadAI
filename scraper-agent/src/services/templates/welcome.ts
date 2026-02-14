@@ -1,8 +1,9 @@
 
 export const getWelcomeEmailHtml = (
-    agentName: string,
-    agentEmail: string,
-    websiteUrl: string
+  agentName: string,
+  agentEmail: string,
+  websiteUrl: string,
+  unsubscribeUrl?: string
 ) => `
 <!DOCTYPE html>
 <html>
@@ -62,6 +63,10 @@ export const getWelcomeEmailHtml = (
     <div style="background-color:#f1f5f9; padding:24px 32px; text-align:center; border-top:1px solid #e2e8f0;">
       <p style="margin:0; color:#94a3b8; font-size:11px;">
         Sent to ${agentEmail}
+        ${unsubscribeUrl ? `
+        <br/><br/>
+        <a href="${unsubscribeUrl}" style="color:#94a3b8; text-decoration:underline;">Unsubscribe</a>
+        ` : ''}
       </p>
     </div>
 
