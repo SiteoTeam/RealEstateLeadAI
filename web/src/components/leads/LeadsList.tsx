@@ -270,7 +270,7 @@ export function LeadsList() {
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, x: 20 }}
-                                        className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden"
+                                        className="fixed inset-0 z-50 lg:static lg:z-auto bg-slate-950/95 lg:bg-slate-900 border-none lg:border lg:border-slate-800 lg:rounded-2xl p-6 shadow-xl relative overflow-y-auto lg:overflow-visible"
                                     >
                                         <div className="absolute top-0 right-0 p-4">
                                             <button onClick={() => setSelectedLead(null)} className="text-slate-500 hover:text-white transition-colors">
@@ -397,7 +397,7 @@ export function LeadsList() {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
-                                        className="bg-slate-900/30 border border-slate-800/50 border-dashed rounded-2xl p-8 text-center"
+                                        className="hidden lg:block bg-slate-900/30 border border-slate-800/50 border-dashed rounded-2xl p-8 text-center"
                                     >
                                         <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <Search className="w-6 h-6 text-slate-600" />

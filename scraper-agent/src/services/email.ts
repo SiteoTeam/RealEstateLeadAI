@@ -143,7 +143,8 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
     const { data: result, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: agentEmail,
-      subject: `Question about your listings`,
+      replyTo: 'siteoteam@gmail.com', // Ensure replies don't bounce
+      subject: `Your agent profile on Google`, // Less "spammy" / bait-like
       html: htmlContent,
       headers: headers
     });
@@ -388,6 +389,7 @@ export async function sendAuditEmail(data: AuditEmailData): Promise<{ success: b
     const { data: result, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: agentEmail,
+      replyTo: 'siteoteam@gmail.com',
       subject: `Website Report for ${agentName}`,
       html: htmlContent,
       headers: headers
