@@ -37,9 +37,17 @@ export const getPaymentSuccessEmailHtml = ({
         </div>
         ` : ''}
         
-        <p style="color: #9ca3af; font-size: 14px; margin-top: 40px; text-align: center;">
-            Need help? Reply to this email.
-        </p>
+        <div style="margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center;">
+            <p style="color: #9ca3af; font-size: 14px; margin: 0 0 8px 0;">
+                Need help? Contact us:
+            </p>
+            <p style="margin: 0 0 4px 0; font-size: 14px;">
+                <a href="mailto:siteoteam@gmail.com" style="color: #4f46e5; text-decoration: none;">siteoteam@gmail.com</a>
+            </p>
+            <p style="margin: 0; font-size: 14px;">
+                <a href="tel:+13234437252" style="color: #4f46e5; text-decoration: none;">(323) 443-7252</a>
+            </p>
+        </div>
     </div>
 </body>
 </html>

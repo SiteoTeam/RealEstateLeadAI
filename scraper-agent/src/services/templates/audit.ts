@@ -38,9 +38,18 @@ export const getAuditEmailHtml = (
         </a>
       </div>
 
-      <p style="font-size:14px; color:#64748b; line-height:1.6; margin-bottom:0;">
+      <p style="font-size:14px; color:#64748b; line-height:1.6; margin-bottom:24px;">
         This link is private and will expire in 7 days.
       </p>
+
+      <div style="border-top:1px solid #e2e8f0; padding-top:20px;">
+        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 4px 0;">
+          <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
+        </p>
+        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
+          <a href="tel:+13234437252" style="color:#4f46e5; text-decoration:none;">(323) 443-7252</a>
+        </p>
+      </div>
     </div>
 
     <div style="background-color:#f8fafc; padding:20px 32px; text-align:center; border-top:1px solid #e2e8f0;">

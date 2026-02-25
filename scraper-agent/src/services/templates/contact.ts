@@ -1,9 +1,9 @@
 
 export const getContactEmailHtml = (
-    visitorName: string,
-    visitorEmail: string,
-    visitorPhone: string | undefined,
-    message: string
+  visitorName: string,
+  visitorEmail: string,
+  visitorPhone: string | undefined,
+  message: string
 ) => `
                 <!-- Preview in browser to see the final result -->
 <!DOCTYPE html>
@@ -75,8 +75,14 @@ export const getContactEmailHtml = (
     <p style="margin:0; color:#94a3b8; font-size:11px; line-height:1.5;">
       To respond to ${visitorName}, please use their contact details above.
     </p>
-    <p style="margin:16px 0 0 0; color:#cbd5e1; font-size:11px;">
+    <p style="margin:16px 0 8px 0; color:#cbd5e1; font-size:11px;">
       Sent via Siteo &middot; Contact Form Notification
+    </p>
+    <p style="margin:0 0 4px 0; font-size:12px;">
+      <a href="mailto:siteoteam@gmail.com" style="color:#94a3b8; text-decoration:none;">siteoteam@gmail.com</a>
+    </p>
+    <p style="margin:0; font-size:12px;">
+      <a href="tel:+13234437252" style="color:#94a3b8; text-decoration:none;">(323) 443-7252</a>
     </p>
   </div>
 

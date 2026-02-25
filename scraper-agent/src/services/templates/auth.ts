@@ -1,8 +1,8 @@
 
 export const getPasswordResetEmailHtml = (
-    agentName: string,
-    agentEmail: string,
-    resetUrl: string
+  agentName: string,
+  agentEmail: string,
+  resetUrl: string
 ) => `
 <!DOCTYPE html>
 <html>
@@ -39,9 +39,18 @@ export const getPasswordResetEmailHtml = (
         </a>
       </p>
 
-      <p style="font-size:14px; color:#64748b; line-height:1.6;">
+      <p style="font-size:14px; color:#64748b; line-height:1.6; margin-bottom:24px;">
         If you didn't request this, you can safely ignore this email.
       </p>
+
+      <div style="border-top:1px solid #f1f5f9; padding-top:20px;">
+        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 4px 0;">
+          <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
+        </p>
+        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
+          <a href="tel:+13234437252" style="color:#4f46e5; text-decoration:none;">(323) 443-7252</a>
+        </p>
+      </div>
     </div>
 
     <!-- Footer -->
@@ -58,10 +67,10 @@ export const getPasswordResetEmailHtml = (
 `;
 
 export const getAdminAccessEmailHtml = (
-    agentName: string,
-    agentEmail: string,
-    adminUrl: string,
-    defaultPassword: string
+  agentName: string,
+  agentEmail: string,
+  adminUrl: string,
+  defaultPassword: string
 ) => `
 <!DOCTYPE html>
 <html>
@@ -121,6 +130,15 @@ export const getAdminAccessEmailHtml = (
       <p style="font-size:16px; color:#334155; line-height:1.6; margin-top:24px;">
         – Team Siteo
       </p>
+
+      <div style="margin-top:24px; border-top:1px solid #f1f5f9; padding-top:20px;">
+        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 4px 0;">
+          <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
+        </p>
+        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
+          <a href="tel:+13234437252" style="color:#4f46e5; text-decoration:none;">(323) 443-7252</a>
+        </p>
+      </div>
     </div>
 
     <!-- Footer -->
@@ -137,10 +155,10 @@ export const getAdminAccessEmailHtml = (
 `;
 
 export const getTrialExpiryEmailHtml = (
-    agentName: string,
-    agentEmail: string,
-    adminUrl: string,
-    daysLeft: number
+  agentName: string,
+  agentEmail: string,
+  adminUrl: string,
+  daysLeft: number
 ) => `
 <!DOCTYPE html>
 <html>
@@ -195,6 +213,15 @@ export const getTrialExpiryEmailHtml = (
       <p style="font-size:16px; color:#334155; line-height:1.6; margin-top:24px;">
         – Team Siteo
       </p>
+
+      <div style="margin-top:24px; border-top:1px solid #f1f5f9; padding-top:20px;">
+        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 4px 0;">
+          <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
+        </p>
+        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
+          <a href="tel:+13234437252" style="color:#4f46e5; text-decoration:none;">(323) 443-7252</a>
+        </p>
+      </div>
     </div>
 
     <!-- Footer -->
