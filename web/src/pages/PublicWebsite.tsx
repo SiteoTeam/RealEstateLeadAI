@@ -1033,7 +1033,7 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
 
                                 {/* Contact Info Cards */}
                                 <div className="grid sm:grid-cols-2 gap-4">
-                                    <a href={`mailto:${localConfig.contactEmail || agent.primary_email}`} className="group p-6 bg-[var(--bg-alt)] hover:bg-[var(--bg-main)] hover:shadow-md rounded-2xl border border-[var(--bg-alt)] transition-all">
+                                    <a href={`mailto:${localConfig.contactEmail || agent.primary_email}`} className="group p-6 bg-[var(--bg-alt)] hover:bg-[var(--bg-main)] hover:shadow-md rounded-2xl border border-slate-200 transition-all">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                                                 <Mail className="w-5 h-5" />
@@ -1045,7 +1045,7 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                                         </div>
                                     </a>
 
-                                    <a href={`tel:${localConfig.contactPhone || agent.primary_phone}`} className="group p-6 bg-[var(--bg-alt)] hover:bg-[var(--bg-main)] hover:shadow-md rounded-2xl border border-[var(--bg-alt)] transition-all">
+                                    <a href={`tel:${localConfig.contactPhone || agent.primary_phone}`} className="group p-6 bg-[var(--bg-alt)] hover:bg-[var(--bg-main)] hover:shadow-md rounded-2xl border border-slate-200 transition-all">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                                                 <Phone className="w-5 h-5" />
@@ -1058,7 +1058,7 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                                     </a>
 
                                     {(agent.city && agent.city !== 'Unknown' && agent.state && agent.state !== 'XX') && (
-                                        <div className="group p-6 bg-[var(--bg-alt)] hover:bg-[var(--bg-main)] hover:shadow-md rounded-2xl border border-[var(--bg-alt)] sm:col-span-2 transition-all">
+                                        <div className="group p-6 bg-[var(--bg-alt)] hover:bg-[var(--bg-main)] hover:shadow-md rounded-2xl border border-slate-200 sm:col-span-2 transition-all">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                                                     <MapPin className="w-5 h-5" />
@@ -1076,27 +1076,27 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                                 {/* Social Links */}
                                 <div className="flex gap-4 pt-4">
                                     {(localConfig.linkedinUrl || agent.linkedin_url) && (
-                                        <a href={localConfig.linkedinUrl || agent.linkedin_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-100">
+                                        <a href={localConfig.linkedinUrl || agent.linkedin_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-200">
                                             <Linkedin className="w-5 h-5" />
                                         </a>
                                     )}
                                     {(localConfig.facebookUrl || agent.facebook_url) && (
-                                        <a href={localConfig.facebookUrl || agent.facebook_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-100">
+                                        <a href={localConfig.facebookUrl || agent.facebook_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-200">
                                             <Facebook className="w-5 h-5" />
                                         </a>
                                     )}
                                     {(localConfig.instagramUrl || agent.instagram_url) && (
-                                        <a href={localConfig.instagramUrl || agent.instagram_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-100">
+                                        <a href={localConfig.instagramUrl || agent.instagram_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-200">
                                             <Instagram className="w-5 h-5" />
                                         </a>
                                     )}
                                     {(localConfig.twitterUrl || agent.twitter_url) && (
-                                        <a href={localConfig.twitterUrl || agent.twitter_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-100">
+                                        <a href={localConfig.twitterUrl || agent.twitter_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-200">
                                             <Twitter className="w-5 h-5" />
                                         </a>
                                     )}
                                     {(localConfig.youtubeUrl || agent.youtube_url) && (
-                                        <a href={localConfig.youtubeUrl || agent.youtube_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-100">
+                                        <a href={localConfig.youtubeUrl || agent.youtube_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white shadow-sm hover:shadow-md transition-all border border-slate-200">
                                             <Youtube className="w-5 h-5" />
                                         </a>
                                     )}

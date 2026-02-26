@@ -92,7 +92,7 @@ export function ContactForm({ agentId, agentName }: ContactFormProps) {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-slate-50 rounded-2xl p-8 border border-slate-200"
+            className="bg-[var(--bg-alt)] rounded-2xl p-8 border border-slate-200 shadow-lg"
         >
             <h3 className="text-xl font-bold text-slate-900 mb-6">Send a Message</h3>
 
