@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getLeads, type DBProfile, updateColdCallStatus } from '../../services/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Phone, PhoneCall, MapPin, Mail, X, Loader2, Save, ChevronDown } from 'lucide-react'
+import { Search, Phone, PhoneCall, MapPin, Mail, X, Loader2, Save, ChevronDown, ExternalLink } from 'lucide-react'
 import { ColdCallBoard, type ColdCallStage } from './ColdCallBoard'
 
 const STAGE_OPTIONS: { id: ColdCallStage; label: string }[] = [
@@ -209,10 +209,23 @@ export function ColdCallsList() {
                                         {selectedLead.primary_phone && (
                                             <a
                                                 href={`tel:${selectedLead.primary_phone}`}
-                                                className="w-full mb-4 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                                                className="w-full mb-3 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
                                             >
                                                 <PhoneCall className="w-5 h-5" />
                                                 {selectedLead.primary_phone}
+                                            </a>
+                                        )}
+
+                                        {/* View Original Profile */}
+                                        {selectedLead.source_url && (
+                                            <a
+                                                href={selectedLead.source_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full mb-4 py-2.5 px-4 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-medium rounded-xl border border-indigo-500/20 transition-all flex items-center justify-center gap-2 text-sm"
+                                            >
+                                                <ExternalLink className="w-4 h-4" />
+                                                View Original Profile
                                             </a>
                                         )}
 
@@ -343,6 +356,19 @@ export function ColdCallsList() {
                                     >
                                         <PhoneCall className="w-5 h-5" />
                                         {selectedLead.primary_phone}
+                                    </a>
+                                )}
+
+                                {/* View Original Profile */}
+                                {selectedLead.source_url && (
+                                    <a
+                                        href={selectedLead.source_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full py-3 px-4 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-medium rounded-xl border border-indigo-500/20 transition-all flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                        View Original Profile
                                     </a>
                                 )}
 
