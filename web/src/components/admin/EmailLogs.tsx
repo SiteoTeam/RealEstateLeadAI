@@ -49,14 +49,36 @@ export function EmailLogs() {
         }
     }, [])
 
-    // Initial load
+    // Initial load + smart polling (only when tab is visible)
     useEffect(() => {
         setLoading(true)
         fetchData().finally(() => setLoading(false))
 
-        // Poll every 5 seconds
-        const interval = setInterval(fetchData, 5000)
-        return () => clearInterval(interval)
+        let interval: ReturnType<typeof setInterval> | null = null
+
+        const startPolling = () => {
+            if (!interval) interval = setInterval(fetchData, 30000)
+        }
+        const stopPolling = () => {
+            if (interval) { clearInterval(interval); interval = null }
+        }
+
+        const onVisibilityChange = () => {
+            if (document.hidden) {
+                stopPolling()
+            } else {
+                fetchData() // refresh immediately when tab becomes visible
+                startPolling()
+            }
+        }
+
+        startPolling()
+        document.addEventListener('visibilitychange', onVisibilityChange)
+
+        return () => {
+            stopPolling()
+            document.removeEventListener('visibilitychange', onVisibilityChange)
+        }
     }, [fetchData])
 
 
@@ -108,7 +130,7 @@ export function EmailLogs() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-semibold text-slate-900">Email Campaign</h2>
-                    <p className="text-sm text-slate-500">Track deliverability and manage lead pipeline. Auto-refreshes every 5s.</p>
+                    <p className="text-sm text-slate-500">Track deliverability and manage lead pipeline. Auto-refreshes every 30s.</p>
                 </div>
 
                 <div className="flex items-center gap-3">

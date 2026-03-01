@@ -40,6 +40,9 @@ export interface DBProfile {
     trial_started_at?: string | null // Added for Trial Logic
     last_contacted_at?: string | null // Added for Emailed Leads
     is_unsubscribed?: boolean // Added for Unsubscribe Logic
+    cold_call_status?: string | null // Added for Cold Calling CRM
+    cold_call_notes?: string | null // Added for Cold Calling CRM
+    cold_call_date?: string | null // Added for Cold Calling CRM
     created_at: string
     updated_at: string
 }
@@ -258,4 +261,32 @@ export async function pruneExpiredLeads(): Promise<{ success: boolean; deleted: 
     }
 
     return response.json()
+}
+
+/**
+ * Mark a lead for cold calling (adds to Cold Calls pipeline)
+ */
+export async function markAsColdCall(id: string, status: string = 'queued'): Promise<void> {
+    return updateLead(id, {
+        cold_call_status: status,
+        cold_call_date: new Date().toISOString()
+    } as any)
+}
+
+/**
+ * Update cold call status and optional notes
+ */
+export async function updateColdCallStatus(
+    id: string,
+    status: string,
+    notes?: string
+): Promise<void> {
+    const data: any = {
+        cold_call_status: status,
+        cold_call_date: new Date().toISOString()
+    }
+    if (notes !== undefined) {
+        data.cold_call_notes = notes
+    }
+    return updateLead(id, data)
 }

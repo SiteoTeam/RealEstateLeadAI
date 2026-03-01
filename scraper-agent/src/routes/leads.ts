@@ -119,7 +119,8 @@ router.patch('/leads/:id', verifySupabaseUser, async (req, res) => {
             'office_name', 'office_address', 'office_phone',
             'headshot_url', 'logo_url', 'brokerage_logo_url',
             'facebook_url', 'linkedin_url', 'instagram_url',
-            'twitter_url', 'youtube_url', 'license_number', 'brokerage'
+            'twitter_url', 'youtube_url', 'license_number', 'brokerage',
+            'cold_call_status', 'cold_call_notes', 'cold_call_date'
         ];
         const updateData: Record<string, any> = {};
         for (const key of allowedFields) {

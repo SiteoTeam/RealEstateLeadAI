@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { getLeads, type DBProfile } from '../../services/api'
+import { getLeads, type DBProfile, markAsColdCall } from '../../services/api'
 import { adminApi } from '../../services/adminApi'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trash2, Search, Mail, Phone, MapPin, Globe, Shield, X, Loader2 } from 'lucide-react'
+import { Trash2, Search, Mail, Phone, PhoneCall, MapPin, Globe, Shield, X, Loader2 } from 'lucide-react'
 import { LeadDetailsModal } from './LeadDetailsModal'
 import { DeleteLeadModal } from './DeleteLeadModal'
 
@@ -368,6 +368,37 @@ export function LeadsList() {
                                             </div>
 
                                             <button
+                                                onClick={async () => {
+                                                    if (!selectedLead) return;
+                                                    if (selectedLead.cold_call_status) {
+                                                        alert(`${selectedLead.full_name} is already in the Cold Calls pipeline.`);
+                                                        return;
+                                                    }
+                                                    if (!confirm(`Add ${selectedLead.full_name} to the Cold Calls pipeline?`)) return;
+                                                    try {
+                                                        await markAsColdCall(selectedLead.id);
+                                                        alert(`${selectedLead.full_name} added to Cold Calls!`);
+                                                        setLeads(prev => prev.map(l =>
+                                                            l.id === selectedLead.id
+                                                                ? { ...l, cold_call_status: 'queued', cold_call_date: new Date().toISOString() }
+                                                                : l
+                                                        ));
+                                                        setSelectedLead(prev => prev ? { ...prev, cold_call_status: 'queued', cold_call_date: new Date().toISOString() } : null);
+                                                    } catch (err: any) {
+                                                        alert('Failed: ' + (err.message || 'Unknown error'));
+                                                    }
+                                                }}
+                                                disabled={!!selectedLead.cold_call_status}
+                                                className={`w-full py-3 px-4 font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm ${selectedLead.cold_call_status
+                                                    ? 'bg-slate-800 text-slate-500 shadow-none cursor-default'
+                                                    : 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/20'
+                                                    }`}
+                                            >
+                                                <PhoneCall className="w-4 h-4" />
+                                                {selectedLead.cold_call_status ? '✓ In Cold Calls' : '📞 Cold Call'}
+                                            </button>
+
+                                            <button
                                                 onClick={() => setShowModal(true)}
                                                 className="w-full py-2.5 px-4 border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-white font-medium rounded-xl transition-colors text-sm"
                                             >
@@ -533,6 +564,37 @@ export function LeadsList() {
                                             Admin
                                         </a>
                                     </div>
+
+                                    <button
+                                        onClick={async () => {
+                                            if (!selectedLead) return;
+                                            if (selectedLead.cold_call_status) {
+                                                alert(`${selectedLead.full_name} is already in the Cold Calls pipeline.`);
+                                                return;
+                                            }
+                                            if (!confirm(`Add ${selectedLead.full_name} to the Cold Calls pipeline?`)) return;
+                                            try {
+                                                await markAsColdCall(selectedLead.id);
+                                                alert(`${selectedLead.full_name} added to Cold Calls!`);
+                                                setLeads(prev => prev.map(l =>
+                                                    l.id === selectedLead.id
+                                                        ? { ...l, cold_call_status: 'queued', cold_call_date: new Date().toISOString() }
+                                                        : l
+                                                ));
+                                                setSelectedLead(prev => prev ? { ...prev, cold_call_status: 'queued', cold_call_date: new Date().toISOString() } : null);
+                                            } catch (err: any) {
+                                                alert('Failed: ' + (err.message || 'Unknown error'));
+                                            }
+                                        }}
+                                        disabled={!!selectedLead.cold_call_status}
+                                        className={`w-full py-3.5 px-4 font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${selectedLead.cold_call_status
+                                            ? 'bg-slate-800 text-slate-500 shadow-none cursor-default'
+                                            : 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/20'
+                                            }`}
+                                    >
+                                        <PhoneCall className="w-4 h-4" />
+                                        {selectedLead.cold_call_status ? '✓ In Cold Calls' : '📞 Cold Call'}
+                                    </button>
 
                                     <button
                                         onClick={() => setShowModal(true)}

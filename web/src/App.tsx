@@ -16,6 +16,7 @@ import { AgentCard } from './components/agent/AgentCard'
 import { LeadsList } from './components/leads/LeadsList'
 import { BulkImport } from './components/import/BulkImport'
 import { EmailLogs } from './components/admin/EmailLogs'
+import { ColdCallsList } from './components/coldcalls/ColdCallsList'
 import { Background } from './components/ui/Background'
 import { Tabs } from './components/layout/Tabs'
 
@@ -142,6 +143,7 @@ function App() {
               { id: 'import', label: 'Single Import' },
               { id: 'bulk', label: 'Bulk Import' },
               { id: 'leads', label: 'My Leads' },
+              { id: 'coldcalls', label: 'Cold Calls' },
               { id: 'emails', label: 'Email Logs' }
             ]}
             currentView={view}
@@ -229,6 +231,12 @@ function App() {
           {view === 'emails' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <EmailLogs />
+            </div>
+          )}
+
+          {view === 'coldcalls' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <ColdCallsList />
             </div>
           )}
         </main>

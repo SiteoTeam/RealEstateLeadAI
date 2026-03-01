@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { type DBProfile, pruneExpiredLeads } from '../../services/api'
+import { type DBProfile, pruneExpiredLeads, markAsColdCall } from '../../services/api'
 import type { EmailLog } from '../../types/email'
 import {
     CheckCircle,
@@ -11,7 +11,8 @@ import {
     ExternalLink,
     Mail,
     Trash2,
-    LogIn
+    LogIn,
+    PhoneCall
 } from 'lucide-react'
 import { DeleteLeadModal } from './DeleteLeadModal'
 import { useState } from 'react'
@@ -154,12 +155,37 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
 
                                         <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2 pt-3 border-t border-slate-800/50 relative z-10">
                                             <span>{new Date(lead.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                                            {lead.website_config?.website_published && (
-                                                <div draggable="false" className="flex items-center gap-1 text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                                                    <ExternalLink className="w-3 h-3" />
-                                                    Live
-                                                </div>
-                                            )}
+                                            <div className="flex items-center gap-1.5">
+                                                {lead.website_config?.website_published && (
+                                                    <div draggable="false" className="flex items-center gap-1 text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                                        <ExternalLink className="w-3 h-3" />
+                                                        Live
+                                                    </div>
+                                                )}
+                                                {!lead.id.startsWith('ghost-') && (
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation()
+                                                            if (lead.cold_call_status) return
+                                                            if (!confirm(`Add ${lead.full_name} to Cold Calls?`)) return
+                                                            try {
+                                                                await markAsColdCall(lead.id)
+                                                                if (onRefresh) onRefresh()
+                                                            } catch (err: any) {
+                                                                alert('Failed: ' + err.message)
+                                                            }
+                                                        }}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full font-medium transition-all ${lead.cold_call_status
+                                                                ? 'text-amber-400 bg-amber-500/10 cursor-default'
+                                                                : 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'
+                                                            }`}
+                                                        title={lead.cold_call_status ? 'In Cold Calls' : 'Add to Cold Calls'}
+                                                    >
+                                                        <PhoneCall className="w-3 h-3" />
+                                                        {lead.cold_call_status ? 'Queued' : 'Call'}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </motion.div>
                                 )
