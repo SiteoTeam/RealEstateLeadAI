@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { type DBProfile, pruneExpiredLeads, markAsColdCall } from '../../services/api'
 import type { EmailLog } from '../../types/email'
 import {
@@ -12,11 +11,15 @@ import {
     Mail,
     Trash2,
     LogIn,
-    PhoneCall
+    PhoneCall,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react'
 import { DeleteLeadModal } from './DeleteLeadModal'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { getStage, getSortedLeadLogs, type Stage } from '../../utils/crmStageLogic'
+
+const CARDS_LIMIT = 15
 
 interface CRMBoardProps {
     leads: DBProfile[]
@@ -41,15 +44,25 @@ const STAGES: { id: Stage; label: string; icon: any; color: string; bg: string }
 export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDeleted, onRefresh }: CRMBoardProps) {
     const [leadToDelete, setLeadToDelete] = useState<DBProfile | null>(null)
     const [isPruning, setIsPruning] = useState(false)
+    const [expandedColumns, setExpandedColumns] = useState<Set<Stage>>(new Set())
 
-    // Wrapper that passes emailLogs to the pure getStage function
-    const getLeadStage = (lead: DBProfile): Stage => getStage(lead, emailLogs)
+    // Memoize stage computation — avoids O(N×M) recalc on every render
+    const { columns, leadLogCache } = useMemo(() => {
+        const getLeadStage = (lead: DBProfile): Stage => getStage(lead, emailLogs)
+        const cols = STAGES.reduce((acc, stage) => {
+            acc[stage.id] = leads.filter(l => getLeadStage(l) === stage.id)
+            return acc
+        }, {} as Record<Stage, DBProfile[]>)
 
-    // Group leads by stage
-    const columns = STAGES.reduce((acc, stage) => {
-        acc[stage.id] = leads.filter(l => getLeadStage(l) === stage.id)
-        return acc
-    }, {} as Record<Stage, DBProfile[]>)
+        // Pre-compute latest log per lead so we don't scan 142 logs per card
+        const logCache = new Map<string, ReturnType<typeof getSortedLeadLogs>[0]>()
+        for (const lead of leads) {
+            const sorted = getSortedLeadLogs(lead, emailLogs)
+            if (sorted.length > 0) logCache.set(lead.id, sorted[0])
+        }
+
+        return { columns: cols, leadLogCache: logCache }
+    }, [leads, emailLogs])
 
     if (loading) {
         return <div className="p-10 text-center text-slate-500">Loading pipeline...</div>
@@ -69,11 +82,23 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
         }
     }
 
+    const toggleColumn = (stageId: Stage) => {
+        setExpandedColumns(prev => {
+            const next = new Set(prev)
+            if (next.has(stageId)) next.delete(stageId)
+            else next.add(stageId)
+            return next
+        })
+    }
+
     return (
         <div className="flex h-[calc(100vh-240px)] overflow-x-auto gap-4 pb-6 px-0 scrollbar-custom">
             {STAGES.map((stage) => {
                 const stageLeads = columns[stage.id]
                 const Icon = stage.icon
+                const isExpanded = expandedColumns.has(stage.id)
+                const hasMore = stageLeads.length > CARDS_LIMIT
+                const visibleLeads = isExpanded ? stageLeads : stageLeads.slice(0, CARDS_LIMIT)
 
                 return (
                     <div key={stage.id} className="min-w-[200px] flex-1 flex-shrink-0 flex flex-col bg-slate-900/20 rounded-2xl border border-slate-800/10 backdrop-blur-sm">
@@ -102,19 +127,14 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
 
                         {/* Column Content */}
                         <div className="flex-1 overflow-y-auto space-y-3 p-3 scrollbar-thin">
-                            {stageLeads.map((lead) => {
-                                // Find latest log for this lead to display subject
-                                const lastLog = getSortedLeadLogs(lead, emailLogs)[0]
+                            {visibleLeads.map((lead) => {
+                                const lastLog = leadLogCache.get(lead.id)
 
                                 return (
-                                    <motion.div
+                                    <div
                                         key={lead.id}
-                                        layoutId={lead.id}
                                         onClick={() => onSelectLead(lead)}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        whileHover={{ y: -2 }}
-                                        className="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10 rounded-xl p-4 cursor-pointer group transition-all duration-200 relative overflow-hidden"
+                                        className="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10 rounded-xl p-4 cursor-pointer group transition-all duration-200 relative overflow-hidden hover:-translate-y-0.5"
                                     >
                                         {/* Subtle gradient background on hover */}
                                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-purple-500/0 to-pink-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none" />
@@ -176,8 +196,8 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
                                                             }
                                                         }}
                                                         className={`flex items-center gap-1 px-2 py-0.5 rounded-full font-medium transition-all ${lead.cold_call_status
-                                                                ? 'text-amber-400 bg-amber-500/10 cursor-default'
-                                                                : 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'
+                                                            ? 'text-amber-400 bg-amber-500/10 cursor-default'
+                                                            : 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'
                                                             }`}
                                                         title={lead.cold_call_status ? 'In Cold Calls' : 'Add to Cold Calls'}
                                                     >
@@ -187,9 +207,29 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
                                                 )}
                                             </div>
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 )
                             })}
+
+                            {/* Show All / Show Less toggle */}
+                            {hasMore && (
+                                <button
+                                    onClick={() => toggleColumn(stage.id)}
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${stage.bg} ${stage.color} hover:opacity-80 border border-slate-800/30`}
+                                >
+                                    {isExpanded ? (
+                                        <>
+                                            <ChevronUp className="w-3.5 h-3.5" />
+                                            Show less
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ChevronDown className="w-3.5 h-3.5" />
+                                            Show all {stageLeads.length}
+                                        </>
+                                    )}
+                                </button>
+                            )}
 
                             {stageLeads.length === 0 && (
                                 <div className="h-32 border-2 border-dashed border-slate-800/30 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-700 bg-slate-900/10">
@@ -217,3 +257,4 @@ export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDelete
         </div>
     )
 }
+
