@@ -204,57 +204,7 @@ function MagneticButton({ children, href }: { children: React.ReactNode; href: s
     )
 }
 
-/* ─────────────── Ticker / Marquee ─────────────── */
-function Marquee() {
-    const items = ['Restaurants', 'Real Estate', 'Fitness Studios', 'Photographers', 'Law Firms', 'Dentists', 'Coaches', 'Consultants', 'eCommerce', 'Startups', 'Agencies', 'Freelancers']
-    const repeated = [...items, ...items]
 
-    return (
-        <div className="w-full overflow-hidden py-6 border-y border-slate-800/50 relative">
-            <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none" />
-            <div className="flex gap-8 whitespace-nowrap" style={{ animation: 'marquee 25s linear infinite' }}>
-                {repeated.map((item, i) => (
-                    <span key={i} className="text-sm md:text-base text-slate-500 font-medium flex items-center gap-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/50" />
-                        {item}
-                    </span>
-                ))}
-            </div>
-        </div>
-    )
-}
-
-/* ─────────────── Timeline / Process ─────────────── */
-function ProcessTimeline() {
-    const steps = [
-        { time: 'Day 1', title: 'We build your site', desc: 'Custom design, your brand, your content. Done for you.', icon: '🔨' },
-        { time: 'Day 2', title: 'You go live', desc: 'Custom domain, SEO-ready, mobile-perfect.', icon: '🚀' },
-        { time: 'Day 3+', title: 'Leads start coming', desc: 'Automated outreach + lead capture on autopilot.', icon: '📥' },
-    ]
-
-    return (
-        <div className="flex flex-col md:flex-row gap-0 md:gap-0 items-stretch">
-            {steps.map((s, i) => (
-                <div key={i} className="flex-1 relative group" style={{ animationDelay: `${i * 200}ms` }}>
-                    {/* Connector line */}
-                    {i < steps.length - 1 && (
-                        <div className="hidden md:block absolute top-8 left-[60%] right-0 h-px bg-gradient-to-r from-indigo-500/30 to-transparent z-0" />
-                    )}
-
-                    <div className="relative z-10 p-6 md:p-8 rounded-2xl border border-slate-800/50 bg-slate-900/30 backdrop-blur-sm transition-all duration-500 hover:border-indigo-500/30 hover:bg-slate-900/50 group-hover:shadow-lg group-hover:shadow-indigo-500/5">
-                        <div className="flex items-center gap-3 mb-4">
-                            <span className="text-2xl">{s.icon}</span>
-                            <span className="text-xs font-bold text-indigo-400 tracking-widest uppercase">{s.time}</span>
-                        </div>
-                        <h3 className="text-xl font-bold text-white mb-2">{s.title}</h3>
-                        <p className="text-sm text-slate-400 leading-relaxed">{s.desc}</p>
-                    </div>
-                </div>
-            ))}
-        </div>
-    )
-}
 
 /* ─────────────── Intake Form Modal ─────────────── */
 const INDUSTRIES = [

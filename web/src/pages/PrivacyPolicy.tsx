@@ -1,4 +1,3 @@
-import { Header } from '../components/layout/Header'
 import { Background } from '../components/ui/Background'
 
 export function PrivacyPolicy() {
