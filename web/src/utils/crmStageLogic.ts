@@ -8,7 +8,7 @@
 import type { DBProfile } from '../services/api'
 import type { EmailLog } from '../types/email'
 
-export type Stage = 'New' | 'Delivered' | 'Opened' | 'Clicked' | 'LoggedIn' | 'Connected' | 'Paid' | 'Bounced' | 'Expired'
+export type Stage = 'New' | 'Delivered' | 'Opened' | 'Clicked' | 'LoggedIn' | 'Connected' | 'Paid' | 'Bounced' | 'Expired' | 'Unsubscribed'
 
 // System/transactional email subjects to EXCLUDE from pipeline tracking
 // Only outreach emails (welcome, audit) should drive pipeline position
@@ -70,6 +70,7 @@ export function getStage(lead: DBProfile, emailLogs: EmailLog[]): Stage {
     if (!lead.is_paid && isTrialExpired(lead)) return 'Expired'
     if (lead.website_config?.custom_domain) return 'Connected'
     if (lead.last_login_at) return 'LoggedIn'
+    if (lead.is_unsubscribed) return 'Unsubscribed'
 
     const allLogs = getSortedLeadLogs(lead, emailLogs)
     if (allLogs.length === 0) return 'New'

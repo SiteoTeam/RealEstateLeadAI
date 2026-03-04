@@ -1,5 +1,6 @@
 import { PublicWebsite } from './pages/PublicWebsite'
 import App from './App'
+import { LandingPage } from './pages/LandingPage'
 import { useDomainLookup } from './hooks/useDomainLookup'
 
 export function DomainRouter() {
@@ -27,6 +28,12 @@ export function DomainRouter() {
         )
     }
 
-    // Default: Render the Dashboard App
-    return <App />
+    // Check if user is logged in
+    const token = localStorage.getItem('sb-jqtrgdmjosegilmbxino-auth-token')
+    if (token) {
+        return <App />
+    }
+
+    // Default: Show Landing Page for visitors
+    return <LandingPage />
 }

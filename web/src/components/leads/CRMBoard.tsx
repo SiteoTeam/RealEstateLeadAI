@@ -13,7 +13,8 @@ import {
     LogIn,
     PhoneCall,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    UserMinus
 } from 'lucide-react'
 import { DeleteLeadModal } from './DeleteLeadModal'
 import { useState, useMemo } from 'react'
@@ -39,6 +40,7 @@ const STAGES: { id: Stage; label: string; icon: any; color: string; bg: string }
     { id: 'Paid', label: 'Paid', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     { id: 'Expired', label: 'Unpublished', icon: Ban, color: 'text-slate-500', bg: 'bg-slate-500/10' },
     { id: 'Bounced', label: 'Bounced', icon: Ban, color: 'text-red-500', bg: 'bg-red-500/10' },
+    { id: 'Unsubscribed', label: 'Unsubscribed', icon: UserMinus, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
 ]
 
 export function CRMBoard({ leads, emailLogs, onSelectLead, loading, onLeadDeleted, onRefresh }: CRMBoardProps) {
