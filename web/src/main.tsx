@@ -12,6 +12,7 @@ import { AuditPage } from './pages/AuditPage.tsx'
 import { PrivacyPolicy } from './pages/PrivacyPolicy.tsx'
 
 import { DomainRouter } from './DomainRouter.tsx'
+import { LandingPageV2 } from './pages/LandingPageV2.tsx'
 
 import { DomainAdminRedirect } from './components/admin/DomainAdminRedirect.tsx'
 
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<DomainRouter />} />
+        <Route path="/v2" element={<LandingPageV2 />} />
         <Route path="/admin" element={<DomainAdminRedirect />} />
         {/* Public Website */}
         <Route path="/w/:slug" element={<PublicWebsite />} />

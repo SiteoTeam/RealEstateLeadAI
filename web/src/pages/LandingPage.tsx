@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 
 /* ═══════════════════════════════════════════════════════════════
    SITEO LANDING — "We build it. You close deals."
@@ -204,11 +204,213 @@ function MagneticButton({ children, href }: { children: React.ReactNode; href: s
     )
 }
 
+/* ─────────────── Scroll Reveal Hook ─────────────── */
+function useScrollReveal(options: { threshold?: number; rootMargin?: string } = {}) {
+    const ref = useRef<HTMLDivElement>(null)
+    const [isVisible, setIsVisible] = useState(false)
+
+    useEffect(() => {
+        const el = ref.current
+        if (!el) return
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.unobserve(el) } },
+            { threshold: options.threshold ?? 0.15, rootMargin: options.rootMargin ?? '0px 0px -60px 0px' }
+        )
+        observer.observe(el)
+        return () => observer.disconnect()
+    }, [options.threshold, options.rootMargin])
+
+    return { ref, isVisible }
+}
+
+/* ─────────────── Parallax Hook ─────────────── */
+function useParallax(speed: number = 0.3) {
+    const ref = useRef<HTMLDivElement>(null)
+    const [offset, setOffset] = useState(0)
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (!ref.current) return
+            const rect = ref.current.getBoundingClientRect()
+            const scrolled = window.innerHeight - rect.top
+            setOffset(scrolled * speed)
+        }
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [speed])
+
+    return { ref, offset }
+}
+
+/* ─────────────── Cursor Spotlight ─────────────── */
+function CursorSpotlight() {
+    const [pos, setPos] = useState({ x: -500, y: -500 })
+
+    useEffect(() => {
+        const onMove = (e: MouseEvent) => setPos({ x: e.clientX, y: e.clientY })
+        window.addEventListener('mousemove', onMove, { passive: true })
+        return () => window.removeEventListener('mousemove', onMove)
+    }, [])
+
+    return (
+        <div className="fixed inset-0 pointer-events-none z-50 opacity-60" style={{
+            background: `radial-gradient(600px circle at ${pos.x}px ${pos.y}px, rgba(99,102,241,0.06), transparent 40%)`,
+        }} />
+    )
+}
+
+/* ─────────────── 3D Tilt Hook ─────────────── */
+function use3DTilt() {
+    const ref = useRef<HTMLDivElement>(null)
+    const [transform, setTransform] = useState('perspective(800px) rotateX(0deg) rotateY(0deg)')
+
+    const handleMove = useCallback((e: React.MouseEvent) => {
+        if (!ref.current) return
+        const rect = ref.current.getBoundingClientRect()
+        const x = (e.clientX - rect.left) / rect.width - 0.5
+        const y = (e.clientY - rect.top) / rect.height - 0.5
+        setTransform(`perspective(800px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) scale(1.02)`)
+    }, [])
+
+    const handleLeave = useCallback(() => {
+        setTransform('perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)')
+    }, [])
+
+    return { ref, transform, handleMove, handleLeave }
+}
+
+/* ─────────────── Text Scramble Effect ─────────────── */
+function TextScramble({ text, isVisible, delay = 0 }: { text: string; isVisible: boolean; delay?: number }) {
+    const [display, setDisplay] = useState('')
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
+
+    useEffect(() => {
+        if (!isVisible) { setDisplay(''); return }
+        const timeout = setTimeout(() => {
+            let frame = 0
+            const totalFrames = text.length * 3
+            const interval = setInterval(() => {
+                frame++
+                const progress = frame / totalFrames
+                const resolved = Math.floor(progress * text.length)
+                let result = ''
+                for (let i = 0; i < text.length; i++) {
+                    if (text[i] === ' ') { result += ' '; continue }
+                    if (i < resolved) { result += text[i]; continue }
+                    result += chars[Math.floor(Math.random() * chars.length)]
+                }
+                setDisplay(result)
+                if (frame >= totalFrames) { setDisplay(text); clearInterval(interval) }
+            }, 30)
+        }, delay)
+        return () => clearTimeout(timeout)
+    }, [isVisible, text, delay])
+
+    return <>{display || '\u00A0'.repeat(text.length)}</>
+}
+
+/* ─────────────── Scroll Progress Hook ─────────────── */
+function useScrollProgress() {
+    const ref = useRef<HTMLDivElement>(null)
+    const [progress, setProgress] = useState(0)
+
+    useEffect(() => {
+        const onScroll = () => {
+            if (!ref.current) return
+            const rect = ref.current.getBoundingClientRect()
+            const windowH = window.innerHeight
+            const sectionH = rect.height
+            const scrolledPast = windowH - rect.top
+            const p = Math.max(0, Math.min(1, scrolledPast / (sectionH + windowH * 0.3)))
+            setProgress(p)
+        }
+        window.addEventListener('scroll', onScroll, { passive: true })
+        onScroll()
+        return () => window.removeEventListener('scroll', onScroll)
+    }, [])
+
+    return { ref, progress }
+}
+
+/* ─────────────── Floating Particles (Enhanced) ─────────────── */
+function FloatingParticles() {
+    const particles = useMemo(() =>
+        Array.from({ length: 50 }, (_, i) => ({
+            id: i,
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            size: Math.random() * 4 + 1,
+            duration: Math.random() * 20 + 8,
+            delay: Math.random() * 15,
+            opacity: Math.random() * 0.4 + 0.05,
+            glow: i < 8, // first 8 particles are larger + glow
+        })),
+        [])
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {particles.map(p => (
+                <div
+                    key={p.id}
+                    className="absolute rounded-full"
+                    style={{
+                        left: `${p.x}%`,
+                        top: `${p.y}%`,
+                        width: p.glow ? p.size * 2 : p.size,
+                        height: p.glow ? p.size * 2 : p.size,
+                        opacity: p.opacity,
+                        background: p.glow ? 'radial-gradient(circle, rgba(129,140,248,0.8), rgba(129,140,248,0) 70%)' : '#818cf8',
+                        animation: `floatParticle ${p.duration}s ease-in-out ${p.delay}s infinite alternate`,
+                        filter: p.glow ? 'blur(1px)' : 'none',
+                    }}
+                />
+            ))}
+        </div>
+    )
+}
+
+/* ─────────────── Animated Counter ─────────────── */
+function AnimatedNumber({ target, suffix = '' }: { target: number; suffix?: string }) {
+    const [count, setCount] = useState(0)
+    const { ref, isVisible } = useScrollReveal({ threshold: 0.5 })
+
+    useEffect(() => {
+        if (!isVisible) return
+        const duration = 1500
+        const startTime = performance.now()
+        const animate = (now: number) => {
+            const elapsed = now - startTime
+            const progress = Math.min(elapsed / duration, 1)
+            const eased = 1 - Math.pow(1 - progress, 3)
+            setCount(Math.round(eased * target))
+            if (progress < 1) requestAnimationFrame(animate)
+        }
+        requestAnimationFrame(animate)
+    }, [isVisible, target])
+
+    return <span ref={ref}>{count}{suffix}</span>
+}
+
+/* ─────────────── 3D Tilt Card ─────────────── */
+function TiltCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+    const tilt = use3DTilt()
+    return (
+        <div
+            ref={tilt.ref}
+            onMouseMove={tilt.handleMove}
+            onMouseLeave={tilt.handleLeave}
+            className={className}
+            style={{ transform: tilt.transform, transition: 'transform 0.15s ease-out', transformStyle: 'preserve-3d' }}
+        >
+            {children}
+        </div>
+    )
+}
+
 
 
 /* ─────────────── Intake Form Modal ─────────────── */
 const INDUSTRIES = [
-    'Real Estate', 'Restaurant / Food', 'Fitness / Gym', 'Photography / Videography',
     'Law / Legal', 'Dental / Medical', 'Coaching / Consulting', 'eCommerce / Retail',
     'Construction / Home Services', 'Beauty / Salon', 'Automotive', 'Tech / SaaS', 'Other'
 ]
@@ -456,6 +658,31 @@ export function LandingPage() {
     const [mounted, setMounted] = useState(false)
     const [showIntakeForm, setShowIntakeForm] = useState(false)
 
+    // Scroll reveal refs for section 2
+    const sectionTitle = useScrollReveal({ threshold: 0.2 })
+    const card0 = useScrollReveal({ threshold: 0.15, rootMargin: '0px 0px -80px 0px' })
+    const card1 = useScrollReveal({ threshold: 0.15, rootMargin: '0px 0px -80px 0px' })
+    const card2 = useScrollReveal({ threshold: 0.15, rootMargin: '0px 0px -80px 0px' })
+    const cardRefs = [card0, card1, card2]
+    const ctaReveal = useScrollReveal({ threshold: 0.2 })
+    const parallaxGlow = useParallax(0.15)
+    const scrollProgress = useScrollProgress()
+
+    // Hero fade-out on scroll
+    const [heroOpacity, setHeroOpacity] = useState(1)
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY
+            const fadeStart = 200
+            const fadeEnd = 600
+            if (scrollY < fadeStart) setHeroOpacity(1)
+            else if (scrollY > fadeEnd) setHeroOpacity(0)
+            else setHeroOpacity(1 - (scrollY - fadeStart) / (fadeEnd - fadeStart))
+        }
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
     useEffect(() => {
         requestAnimationFrame(() => setMounted(true))
     }, [])
@@ -482,7 +709,7 @@ export function LandingPage() {
                 }} />
 
                 {/* Two-column layout */}
-                <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-20">
+                <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-20" style={{ opacity: heroOpacity, transform: `translateY(${(1 - heroOpacity) * -30}px)`, transition: 'opacity 0.1s, transform 0.1s' }}>
                     <div className="grid lg:grid-cols-2 gap-16 lg:gap-8 items-center">
 
                         {/* Left — Copy */}
@@ -515,7 +742,7 @@ export function LandingPage() {
                             <p className="text-lg md:text-xl text-slate-400 mt-8 max-w-lg leading-relaxed transition-all duration-1000 delay-500"
                                 style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(30px)' }}>
                                 AI-powered lead funnels that capture clients, book appointments, and make
-                                you look like the #1 choice in your market <span className="text-slate-200 font-semibold">in 24 hours.</span>
+                                you look like the #1 choice in your market <span className="text-slate-200 font-semibold">in <AnimatedNumber target={24} suffix=" hours" />.</span>
                             </p>
 
                             {/* CTA */}
@@ -541,7 +768,7 @@ export function LandingPage() {
 
                 {/* Scroll hint */}
                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-600 transition-all duration-1000 delay-[1.5s]"
-                    style={{ opacity: mounted ? 1 : 0 }}>
+                    style={{ opacity: mounted ? Math.min(1, heroOpacity * 2) : 0 }}>
                     <span className="text-[10px] tracking-[3px] uppercase font-medium">Scroll</span>
                     <div className="w-5 h-8 rounded-full border border-slate-700 flex items-start justify-center p-1.5">
                         <div className="w-1 h-2 rounded-full bg-indigo-400" style={{ animation: 'scrollDot 2s ease-in-out infinite' }} />
@@ -551,10 +778,18 @@ export function LandingPage() {
 
             {/* ═══ SECTION 2 — THE PITCH ═══ */}
             <section className="relative overflow-hidden">
-                {/* Background effects for the entire section */}
+                {/* Top edge line */}
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
-                <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full blur-[200px] opacity-10 pointer-events-none"
-                    style={{ background: 'radial-gradient(circle, #6366f1, #7c3aed, transparent)' }} />
+
+                {/* Parallax background glow */}
+                <div ref={parallaxGlow.ref} className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full blur-[200px] opacity-10 pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, #6366f1, #7c3aed, transparent)', transform: `translateX(-50%) translateY(${parallaxGlow.offset}px)` }} />
+
+                {/* Floating particles */}
+                <FloatingParticles />
+
+                {/* Cursor spotlight */}
+                <CursorSpotlight />
 
                 {/* ── Industry Marquee ── */}
                 <div className="py-8 border-b border-white/5 overflow-hidden relative">
@@ -571,21 +806,64 @@ export function LandingPage() {
                 </div>
 
                 {/* ── How it Works + CTA ── */}
-                <div className="max-w-6xl mx-auto px-6 md:px-12 py-32">
-                    {/* Section Title */}
-                    <div className="text-center mb-20">
-                        <span className="text-xs font-bold text-indigo-400 tracking-[4px] uppercase mb-5 block">How it works</span>
+                <div ref={scrollProgress.ref} className="max-w-6xl mx-auto px-6 md:px-12 py-32 relative">
+
+                    {/* Vertical scroll progress beam — glows as you scroll */}
+                    <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px">
+                        <div className="absolute inset-0 bg-slate-800/30" />
+                        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-indigo-500 via-purple-500 to-indigo-500"
+                            style={{
+                                height: `${scrollProgress.progress * 100}%`,
+                                boxShadow: '0 0 15px rgba(99,102,241,0.6), 0 0 40px rgba(99,102,241,0.2)',
+                                transition: 'height 0.1s linear',
+                            }} />
+                        {/* Moving dot at the end of the beam */}
+                        <div className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-indigo-400"
+                            style={{
+                                top: `${scrollProgress.progress * 100}%`,
+                                boxShadow: '0 0 20px rgba(99,102,241,0.8), 0 0 60px rgba(99,102,241,0.4)',
+                                transition: 'top 0.1s linear',
+                                opacity: scrollProgress.progress > 0.02 ? 1 : 0,
+                            }} />
+                    </div>
+
+                    {/* Section Title — text scramble effect */}
+                    <div ref={sectionTitle.ref} className="text-center mb-24 transition-all duration-[1.2s] ease-out relative z-10"
+                        style={{
+                            opacity: sectionTitle.isVisible ? 1 : 0,
+                            transform: sectionTitle.isVisible ? 'translateY(0)' : 'translateY(60px)',
+                        }}>
+                        <span className="text-xs font-bold text-indigo-400 tracking-[4px] uppercase mb-5 block font-mono">
+                            <TextScramble text="HOW IT WORKS" isVisible={sectionTitle.isVisible} delay={200} />
+                        </span>
                         <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">
-                            Live in <span style={{ background: 'linear-gradient(135deg, #818cf8, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>three days.</span>
+                            <span className="inline-block transition-all duration-700 delay-300" style={{ opacity: sectionTitle.isVisible ? 1 : 0, transform: sectionTitle.isVisible ? 'translateY(0)' : 'translateY(30px)' }}>
+                                Live in{' '}
+                            </span>
+                            <span className="inline-block transition-all duration-700 delay-500" style={{
+                                opacity: sectionTitle.isVisible ? 1 : 0,
+                                transform: sectionTitle.isVisible ? 'translateY(0)' : 'translateY(30px)',
+                                background: 'linear-gradient(135deg, #818cf8, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
+                            }}>
+                                three days.
+                            </span>
                             <br className="hidden sm:block" />
-                            <span className="text-slate-500"> Not three months.</span>
+                            <span className="inline-block text-slate-500 transition-all duration-700 delay-700" style={{ opacity: sectionTitle.isVisible ? 1 : 0, transform: sectionTitle.isVisible ? 'translateY(0)' : 'translateY(30px)' }}>
+                                {' '}Not three months.
+                            </span>
                         </h2>
                     </div>
 
-                    {/* Timeline Cards — horizontal with connecting line */}
+                    {/* Timeline Cards — 3D tilt + staggered reveal */}
                     <div className="relative">
                         {/* Connecting line behind cards */}
-                        <div className="hidden md:block absolute top-[60px] left-[16%] right-[16%] h-px bg-gradient-to-r from-indigo-500/30 via-indigo-500/60 to-indigo-500/30" />
+                        <div className="hidden md:block absolute top-[60px] left-[16%] right-[16%] h-px"
+                            style={{
+                                background: `linear-gradient(90deg, ${card0.isVisible ? '#818cf8' : 'transparent'} 0%, ${card1.isVisible ? '#a78bfa' : 'transparent'} 50%, ${card2.isVisible ? '#c084fc' : 'transparent'} 100%)`,
+                                boxShadow: card0.isVisible ? '0 0 10px rgba(129,140,248,0.3)' : 'none',
+                                transition: 'all 1.5s ease-out',
+                                opacity: card0.isVisible ? 0.8 : 0
+                            }} />
 
                         <div className="grid md:grid-cols-3 gap-8">
                             {[
@@ -611,85 +889,130 @@ export function LandingPage() {
                                     accent: '#c084fc',
                                 },
                             ].map((item, i) => (
-                                <div key={i} className="group relative">
-                                    {/* Step number circle */}
-                                    <div className="relative z-10 w-[120px] mx-auto mb-6 flex flex-col items-center">
-                                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold mb-2 border"
-                                            style={{ borderColor: `${item.accent}40`, color: item.accent, background: `${item.accent}10`, boxShadow: `0 0 20px ${item.accent}15` }}>
+                                <div key={i} ref={cardRefs[i].ref} className="relative transition-all ease-out"
+                                    style={{
+                                        opacity: cardRefs[i].isVisible ? 1 : 0,
+                                        transform: cardRefs[i].isVisible
+                                            ? 'translateY(0) scale(1) rotate(0deg)'
+                                            : `translateY(100px) scale(0.9) rotate(${i === 0 ? -3 : i === 2 ? 3 : 0}deg)`,
+                                        transitionDuration: '1.1s',
+                                        transitionDelay: `${i * 250}ms`,
+                                        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                                    }}>
+                                    {/* Step number circle with orbiting ring */}
+                                    <div className="relative z-10 w-[120px] h-[120px] mx-auto mb-6 flex flex-col items-center justify-center">
+                                        {/* Orbiting ring */}
+                                        <div className="absolute inset-0 rounded-full border border-dashed pointer-events-none"
+                                            style={{
+                                                borderColor: `${item.accent}20`,
+                                                animation: `spin ${8 + i * 2}s linear infinite${i === 1 ? ' reverse' : ''}`,
+                                            }}>
+                                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+                                                style={{ background: item.accent, boxShadow: `0 0 8px ${item.accent}` }} />
+                                        </div>
+                                        {/* Inner circle */}
+                                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black border-2 transition-all duration-700"
+                                            style={{
+                                                borderColor: cardRefs[i].isVisible ? `${item.accent}60` : 'transparent',
+                                                color: item.accent,
+                                                background: `${item.accent}08`,
+                                                boxShadow: cardRefs[i].isVisible ? `0 0 30px ${item.accent}30, inset 0 0 20px ${item.accent}10` : 'none',
+                                            }}>
                                             {item.step}
                                         </div>
-                                        <span className="text-[10px] font-bold tracking-[3px] uppercase" style={{ color: item.accent }}>
+                                        <span className="text-[10px] font-bold tracking-[3px] uppercase mt-2" style={{ color: item.accent }}>
                                             {item.day}
                                         </span>
                                     </div>
 
-                                    {/* Card */}
-                                    <div className="relative rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm p-8 transition-all duration-500 hover:border-indigo-500/20 hover:bg-white/[0.04] hover:-translate-y-1">
-                                        <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-                                        <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                                    {/* 3D Tilt Card */}
+                                    <TiltCard className="group">
+                                        <div className="relative rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm p-8 transition-all duration-500 hover:border-indigo-500/20 hover:bg-white/[0.04]"
+                                            style={{ transformStyle: 'preserve-3d' }}>
+                                            {/* Shine effect on hover */}
+                                            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+                                                style={{ background: 'linear-gradient(135deg, rgba(129,140,248,0.05) 0%, transparent 50%, rgba(167,139,250,0.05) 100%)' }} />
+                                            <h3 className="text-xl font-bold text-white mb-3 relative z-10" style={{ transform: 'translateZ(20px)' }}>{item.title}</h3>
+                                            <p className="text-slate-400 text-sm leading-relaxed relative z-10" style={{ transform: 'translateZ(10px)' }}>{item.desc}</p>
 
-                                        {/* Bottom glow on hover */}
-                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                                            style={{ background: `linear-gradient(90deg, transparent, ${item.accent}40, transparent)` }} />
-                                    </div>
+                                            {/* Bottom glow on hover */}
+                                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                                                style={{ background: `linear-gradient(90deg, transparent, ${item.accent}50, transparent)`, boxShadow: `0 0 10px ${item.accent}30` }} />
+                                        </div>
+                                    </TiltCard>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* ── CTA Card ── */}
-                    <div className="mt-32 relative flex items-center justify-center">
-                        {/* Radial glow behind card */}
-                        <div className="absolute w-[500px] h-[500px] rounded-full blur-[150px] opacity-20 pointer-events-none"
-                            style={{ background: 'radial-gradient(circle, #6366f1, #7c3aed, transparent)' }} />
+                    {/* ── CTA Card — scroll reveal + breathing glow ── */}
+                    <div ref={ctaReveal.ref} className="mt-32 relative flex items-center justify-center transition-all ease-out"
+                        style={{
+                            opacity: ctaReveal.isVisible ? 1 : 0,
+                            transform: ctaReveal.isVisible ? 'translateY(0) scale(1)' : 'translateY(80px) scale(0.88)',
+                            transitionDuration: '1.4s',
+                            transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                        }}>
+                        {/* Breathing radial glow */}
+                        <div className="absolute w-[600px] h-[600px] rounded-full blur-[180px] pointer-events-none"
+                            style={{
+                                background: 'radial-gradient(circle, #6366f1, #7c3aed, transparent)',
+                                opacity: ctaReveal.isVisible ? 0.25 : 0,
+                                transition: 'opacity 2s',
+                                animation: ctaReveal.isVisible ? 'breathe 4s ease-in-out infinite' : 'none',
+                            }} />
 
                         {/* Animated border ring */}
-                        <div className="absolute w-[calc(100%+4px)] h-[calc(100%+4px)] rounded-[28px] opacity-60 pointer-events-none"
+                        <div className="absolute w-[calc(100%+4px)] h-[calc(100%+4px)] rounded-[28px] pointer-events-none"
                             style={{
                                 background: 'conic-gradient(from 0deg, #6366f1, #a78bfa, #c084fc, #6366f1)',
                                 animation: 'spin 6s linear infinite',
                                 filter: 'blur(1px)',
+                                opacity: ctaReveal.isVisible ? 0.6 : 0,
+                                transition: 'opacity 1.5s',
                             }} />
 
                         {/* Card */}
-                        <div className="relative rounded-[26px] bg-slate-950/90 backdrop-blur-xl px-8 md:px-16 py-16 text-center max-w-2xl w-full border border-white/5">
-                            {/* Inner glow */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
+                        <TiltCard className="relative max-w-2xl w-full">
+                            <div className="rounded-[26px] bg-slate-950/90 backdrop-blur-xl px-8 md:px-16 py-16 text-center border border-white/5">
+                                {/* Inner glow line */}
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
 
-                            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">
-                                Ready to stand out?
-                            </h2>
-                            <p className="text-base md:text-lg text-slate-400 mb-10 max-w-md mx-auto leading-relaxed">
-                                Tell us about your business and we'll build you a customer acquisition system that turns visitors into clients.
-                            </p>
+                                <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">
+                                    <TextScramble text="Ready to stand out?" isVisible={ctaReveal.isVisible} delay={400} />
+                                </h2>
+                                <p className="text-base md:text-lg text-slate-400 mb-10 max-w-md mx-auto leading-relaxed">
+                                    Tell us about your business and we'll build you a customer acquisition system that turns visitors into clients.
+                                </p>
 
-                            {/* Form trigger button */}
-                            <button
-                                onClick={() => setShowIntakeForm(true)}
-                                className="group relative inline-flex items-center gap-3 px-10 py-5 text-lg font-bold text-white rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/30 active:scale-[0.98] select-none"
-                                style={{ background: 'linear-gradient(135deg, #4338ca, #6366f1, #7c3aed)' }}
-                            >
-                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                                    <div className="absolute inset-0" style={{
-                                        background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.12) 55%, transparent 60%)',
-                                        animation: 'shimmerSweep 2s ease-in-out infinite',
-                                    }} />
-                                </div>
-                                <span className="relative z-10 flex items-center gap-3">
-                                    Get Started — It's Free
-                                </span>
-                            </button>
-
-                            {/* Trust signals */}
-                            <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-500">
-                                {['No credit card', 'Live in 3 days', 'Cancel anytime'].map((t, i) => (
-                                    <span key={i} className="flex items-center gap-1.5">
-                                        <span className="w-1 h-1 rounded-full bg-emerald-500/80" />
-                                        {t}
+                                {/* Form trigger button */}
+                                <button
+                                    onClick={() => setShowIntakeForm(true)}
+                                    className="group relative inline-flex items-center gap-3 px-10 py-5 text-lg font-bold text-white rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/30 active:scale-[0.98] select-none"
+                                    style={{ background: 'linear-gradient(135deg, #4338ca, #6366f1, #7c3aed)' }}
+                                >
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                        <div className="absolute inset-0" style={{
+                                            background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.12) 55%, transparent 60%)',
+                                            animation: 'shimmerSweep 2s ease-in-out infinite',
+                                        }} />
+                                    </div>
+                                    <span className="relative z-10 flex items-center gap-3">
+                                        Get Started, It's Free
                                     </span>
-                                ))}
+                                </button>
+
+                                {/* Trust signals */}
+                                <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-500">
+                                    {['No credit card', 'Live in 3 days', 'Cancel anytime'].map((t, i) => (
+                                        <span key={i} className="flex items-center gap-1.5">
+                                            <span className="w-1 h-1 rounded-full bg-emerald-500/80" />
+                                            {t}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        </TiltCard>
                     </div>
                 </div>
             </section>
@@ -766,6 +1089,16 @@ export function LandingPage() {
                 @keyframes shimmerSweep {
                     0% { transform: translateX(-100%); }
                     100% { transform: translateX(200%); }
+                }
+                @keyframes floatParticle {
+                    0% { transform: translateY(0px) translateX(0px); }
+                    33% { transform: translateY(-20px) translateX(10px); }
+                    66% { transform: translateY(-10px) translateX(-10px); }
+                    100% { transform: translateY(-30px) translateX(5px); }
+                }
+                @keyframes breathe {
+                    0%, 100% { transform: scale(1); opacity: 0.2; }
+                    50% { transform: scale(1.15); opacity: 0.35; }
                 }
             `}</style>
         </div>
