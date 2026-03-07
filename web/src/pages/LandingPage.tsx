@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 
 /* ═══════════════════════════════════════════════════════════════
    SITEO LANDING — "We build it. You close deals."
@@ -223,25 +224,6 @@ function useScrollReveal(options: { threshold?: number; rootMargin?: string } = 
     return { ref, isVisible }
 }
 
-/* ─────────────── Parallax Hook ─────────────── */
-function useParallax(speed: number = 0.3) {
-    const ref = useRef<HTMLDivElement>(null)
-    const [offset, setOffset] = useState(0)
-
-    useEffect(() => {
-        const handleScroll = () => {
-            if (!ref.current) return
-            const rect = ref.current.getBoundingClientRect()
-            const scrolled = window.innerHeight - rect.top
-            setOffset(scrolled * speed)
-        }
-        window.addEventListener('scroll', handleScroll, { passive: true })
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [speed])
-
-    return { ref, offset }
-}
-
 /* ─────────────── Cursor Spotlight ─────────────── */
 function CursorSpotlight() {
     const [pos, setPos] = useState({ x: -500, y: -500 })
@@ -307,29 +289,6 @@ function TextScramble({ text, isVisible, delay = 0 }: { text: string; isVisible:
     }, [isVisible, text, delay])
 
     return <>{display || '\u00A0'.repeat(text.length)}</>
-}
-
-/* ─────────────── Scroll Progress Hook ─────────────── */
-function useScrollProgress() {
-    const ref = useRef<HTMLDivElement>(null)
-    const [progress, setProgress] = useState(0)
-
-    useEffect(() => {
-        const onScroll = () => {
-            if (!ref.current) return
-            const rect = ref.current.getBoundingClientRect()
-            const windowH = window.innerHeight
-            const sectionH = rect.height
-            const scrolledPast = windowH - rect.top
-            const p = Math.max(0, Math.min(1, scrolledPast / (sectionH + windowH * 0.3)))
-            setProgress(p)
-        }
-        window.addEventListener('scroll', onScroll, { passive: true })
-        onScroll()
-        return () => window.removeEventListener('scroll', onScroll)
-    }, [])
-
-    return { ref, progress }
 }
 
 /* ─────────────── Floating Particles (Enhanced) ─────────────── */
@@ -665,23 +624,22 @@ export function LandingPage() {
     const card2 = useScrollReveal({ threshold: 0.15, rootMargin: '0px 0px -80px 0px' })
     const cardRefs = [card0, card1, card2]
     const ctaReveal = useScrollReveal({ threshold: 0.2 })
-    const parallaxGlow = useParallax(0.15)
-    const scrollProgress = useScrollProgress()
 
-    // Hero fade-out on scroll
-    const [heroOpacity, setHeroOpacity] = useState(1)
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollY = window.scrollY
-            const fadeStart = 200
-            const fadeEnd = 600
-            if (scrollY < fadeStart) setHeroOpacity(1)
-            else if (scrollY > fadeEnd) setHeroOpacity(0)
-            else setHeroOpacity(1 - (scrollY - fadeStart) / (fadeEnd - fadeStart))
-        }
-        window.addEventListener('scroll', handleScroll, { passive: true })
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
+    // Framer Motion global scroll hooks
+    const { scrollY } = useScroll()
+    const { scrollYProgress: pitchScrollYProgress } = useScroll({
+        target: useRef<HTMLDivElement>(null), // We'll attach this to the Pitch section below
+        offset: ['start end', 'end start']
+    })
+
+    const heroOpacity = useTransform(scrollY, [200, 600], [1, 0])
+    const heroTranslateY = useTransform(scrollY, [200, 600], [0, 30])
+
+    // Parallax glow effect
+    const parallaxGlowY = useTransform(pitchScrollYProgress, [0, 1], [-200, 400])
+
+    const scrollBeamHeight = useTransform(pitchScrollYProgress, [0, 0.8], ['0%', '100%'])
+    const scrollBeamOpacity = useTransform(pitchScrollYProgress, [0, 0.05], [0, 1])
 
     useEffect(() => {
         requestAnimationFrame(() => setMounted(true))
@@ -709,7 +667,8 @@ export function LandingPage() {
                 }} />
 
                 {/* Two-column layout */}
-                <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-20" style={{ opacity: heroOpacity, transform: `translateY(${(1 - heroOpacity) * -30}px)`, transition: 'opacity 0.1s, transform 0.1s' }}>
+                <motion.div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-20"
+                    style={{ opacity: heroOpacity, y: heroTranslateY, transition: 'opacity 0.1s, transform 0.1s' }}>
                     <div className="grid lg:grid-cols-2 gap-16 lg:gap-8 items-center">
 
                         {/* Left — Copy */}
@@ -764,16 +723,16 @@ export function LandingPage() {
                             <WebsiteMockup />
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Scroll hint */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-600 transition-all duration-1000 delay-[1.5s]"
-                    style={{ opacity: mounted ? Math.min(1, heroOpacity * 2) : 0 }}>
+                <motion.div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-600 transition-all duration-1000 delay-[1.5s]"
+                    style={{ opacity: mounted ? heroOpacity : 0 }}>
                     <span className="text-[10px] tracking-[3px] uppercase font-medium">Scroll</span>
                     <div className="w-5 h-8 rounded-full border border-slate-700 flex items-start justify-center p-1.5">
                         <div className="w-1 h-2 rounded-full bg-indigo-400" style={{ animation: 'scrollDot 2s ease-in-out infinite' }} />
                     </div>
-                </div>
+                </motion.div>
             </section>
 
             {/* ═══ SECTION 2 — THE PITCH ═══ */}
@@ -782,8 +741,8 @@ export function LandingPage() {
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
 
                 {/* Parallax background glow */}
-                <div ref={parallaxGlow.ref} className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full blur-[200px] opacity-10 pointer-events-none"
-                    style={{ background: 'radial-gradient(circle, #6366f1, #7c3aed, transparent)', transform: `translateX(-50%) translateY(${parallaxGlow.offset}px)` }} />
+                <motion.div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full blur-[200px] opacity-10 pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, #6366f1, #7c3aed, transparent)', x: "-50%", y: parallaxGlowY }} />
 
                 {/* Floating particles */}
                 <FloatingParticles />
@@ -806,24 +765,26 @@ export function LandingPage() {
                 </div>
 
                 {/* ── How it Works + CTA ── */}
-                <div ref={scrollProgress.ref} className="max-w-6xl mx-auto px-6 md:px-12 py-32 relative">
+                <motion.div className="max-w-6xl mx-auto px-6 md:px-12 py-32 relative"
+                    onViewportEnter={() => { }} // This triggers framer motion viewport hooks if desired
+                    viewport={{ margin: "0px 0px -200px 0px" }}>
 
                     {/* Vertical scroll progress beam — glows as you scroll */}
                     <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px">
                         <div className="absolute inset-0 bg-slate-800/30" />
-                        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-indigo-500 via-purple-500 to-indigo-500"
+                        <motion.div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-indigo-500 via-purple-500 to-indigo-500"
                             style={{
-                                height: `${scrollProgress.progress * 100}%`,
+                                height: scrollBeamHeight,
                                 boxShadow: '0 0 15px rgba(99,102,241,0.6), 0 0 40px rgba(99,102,241,0.2)',
                                 transition: 'height 0.1s linear',
                             }} />
                         {/* Moving dot at the end of the beam */}
-                        <div className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-indigo-400"
+                        <motion.div className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-indigo-400"
                             style={{
-                                top: `${scrollProgress.progress * 100}%`,
+                                top: scrollBeamHeight,
                                 boxShadow: '0 0 20px rgba(99,102,241,0.8), 0 0 60px rgba(99,102,241,0.4)',
                                 transition: 'top 0.1s linear',
-                                opacity: scrollProgress.progress > 0.02 ? 1 : 0,
+                                opacity: scrollBeamOpacity,
                             }} />
                     </div>
 
@@ -1014,7 +975,7 @@ export function LandingPage() {
                             </div>
                         </TiltCard>
                     </div>
-                </div>
+                </motion.div>
             </section>
 
             {/* Footer */}
