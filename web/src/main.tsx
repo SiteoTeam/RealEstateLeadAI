@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
-// import App from './App.tsx'
+import App from './App.tsx'
 import { PublicWebsite } from './pages/PublicWebsite.tsx'
 import { AdminLogin } from './pages/admin/AdminLogin.tsx'
 // import { CreateLead } from './pages/CreateLead.tsx'
@@ -20,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<DomainRouter />} />
+        <Route path="/login" element={<App />} />
         <Route path="/admin" element={<DomainAdminRedirect />} />
         {/* Public Website */}
         <Route path="/w/:slug" element={<PublicWebsite />} />
