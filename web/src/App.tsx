@@ -137,7 +137,7 @@ function App() {
       <div className="relative z-10">
         <Header />
 
-        <main className="container mx-auto px-4 py-8 max-w-5xl">
+        <main className={`container mx-auto px-4 py-4 sm:py-8 transition-all duration-300 ${['leads', 'coldcalls', 'emails'].includes(view) ? 'max-w-[1600px]' : 'max-w-5xl'}`}>
           <Tabs
             views={[
               { id: 'import', label: 'Single Import' },

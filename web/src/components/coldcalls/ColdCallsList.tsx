@@ -169,7 +169,7 @@ export function ColdCallsList() {
                     </div>
 
                     {/* RIGHT COLUMN: Action Panel (Desktop) */}
-                    <div className="hidden lg:block w-80 shrink-0">
+                    <div className="hidden lg:block w-80 xl:w-96 shrink-0">
                         <div className="sticky top-6">
                             <AnimatePresence mode="wait">
                                 {selectedLead ? (
@@ -318,7 +318,7 @@ export function ColdCallsList() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="lg:hidden fixed inset-0 z-50 bg-slate-950 overflow-y-auto"
+                            className="lg:hidden fixed inset-0 z-[100] h-[100dvh] bg-slate-950 overflow-y-auto"
                         >
                             {/* Close Bar */}
                             <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-slate-950/95 backdrop-blur-md border-b border-slate-800">

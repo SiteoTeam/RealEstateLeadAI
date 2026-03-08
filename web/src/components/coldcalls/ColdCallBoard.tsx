@@ -59,13 +59,13 @@ export function ColdCallBoard({ leads, onSelectLead, loading, onLeadUpdated }: C
     }
 
     return (
-        <div className="flex h-[calc(100vh-280px)] overflow-x-auto gap-3 pb-6 px-0 scrollbar-custom">
+        <div className="flex h-[calc(100dvh-220px)] lg:h-[calc(100vh-180px)] overflow-x-auto gap-3 pb-6 px-0 scrollbar-custom">
             {STAGES.map((stage) => {
                 const stageLeads = columns[stage.id]
                 const Icon = stage.icon
 
                 return (
-                    <div key={stage.id} className="min-w-[160px] flex-1 flex-shrink-0 flex flex-col bg-slate-900/20 rounded-2xl border border-slate-800/10 backdrop-blur-sm">
+                    <div key={stage.id} className="min-w-[280px] w-[320px] flex-1 flex-shrink-0 flex flex-col bg-slate-900/20 rounded-2xl border border-slate-800/10 backdrop-blur-sm">
                         {/* Column Header */}
                         <div className={`flex items-center justify-between p-4 rounded-t-2xl border-b border-slate-800/50 ${stage.bg} mb-1 sticky top-0 z-10 backdrop-blur-md`}>
                             <div className="flex items-center gap-3">
