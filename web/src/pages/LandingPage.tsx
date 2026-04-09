@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
+import { Helmet } from 'react-helmet-async'
 
 /* ═══════════════════════════════════════════════════════════════
    SITEO LANDING — "We build it. You close deals."
@@ -159,20 +160,21 @@ function MagneticButton({ children, href }: { children: React.ReactNode; href: s
     const btnRef = useRef<HTMLAnchorElement>(null)
     const [offset, setOffset] = useState({ x: 0, y: 0 })
     const [hovered, setHovered] = useState(false)
+    const isTouch = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
 
     const handleMove = useCallback((e: React.MouseEvent) => {
-        if (!btnRef.current) return
+        if (isTouch || !btnRef.current) return
         const rect = btnRef.current.getBoundingClientRect()
         setOffset({
             x: (e.clientX - rect.left - rect.width / 2) * 0.25,
             y: (e.clientY - rect.top - rect.height / 2) * 0.25,
         })
-    }, [])
+    }, [isTouch])
 
     return (
         <a ref={btnRef} href={href} target="_blank" rel="noopener noreferrer"
             onMouseMove={handleMove}
-            onMouseEnter={() => setHovered(true)}
+            onMouseEnter={() => { if (!isTouch) setHovered(true) }}
             onMouseLeave={() => { setOffset({ x: 0, y: 0 }); setHovered(false) }}
             className="relative inline-flex group select-none"
             style={{
@@ -229,9 +231,17 @@ function CursorSpotlight() {
     const [pos, setPos] = useState({ x: -500, y: -500 })
 
     useEffect(() => {
-        const onMove = (e: MouseEvent) => setPos({ x: e.clientX, y: e.clientY })
+        if (window.matchMedia('(hover: none)').matches) return
+        let rafId: number
+        const onMove = (e: MouseEvent) => {
+            cancelAnimationFrame(rafId)
+            rafId = requestAnimationFrame(() => setPos({ x: e.clientX, y: e.clientY }))
+        }
         window.addEventListener('mousemove', onMove, { passive: true })
-        return () => window.removeEventListener('mousemove', onMove)
+        return () => {
+            window.removeEventListener('mousemove', onMove)
+            cancelAnimationFrame(rafId)
+        }
     }, [])
 
     return (
@@ -245,14 +255,15 @@ function CursorSpotlight() {
 function use3DTilt() {
     const ref = useRef<HTMLDivElement>(null)
     const [transform, setTransform] = useState('perspective(800px) rotateX(0deg) rotateY(0deg)')
+    const isTouch = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
 
     const handleMove = useCallback((e: React.MouseEvent) => {
-        if (!ref.current) return
+        if (isTouch || !ref.current) return
         const rect = ref.current.getBoundingClientRect()
         const x = (e.clientX - rect.left) / rect.width - 0.5
         const y = (e.clientY - rect.top) / rect.height - 0.5
         setTransform(`perspective(800px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) scale(1.02)`)
-    }, [])
+    }, [isTouch])
 
     const handleLeave = useCallback(() => {
         setTransform('perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)')
@@ -268,12 +279,12 @@ function TextScramble({ text, isVisible, delay = 0 }: { text: string; isVisible:
 
     useEffect(() => {
         if (!isVisible) { setDisplay(''); return }
-        const timeout = setTimeout(() => {
-            let frame = 0
-            const totalFrames = text.length * 3
-            const interval = setInterval(() => {
-                frame++
-                const progress = frame / totalFrames
+        let rafId: number
+        const timeoutId = setTimeout(() => {
+            const duration = text.length * 90
+            const startTime = performance.now()
+            const tick = (now: number) => {
+                const progress = Math.min((now - startTime) / duration, 1)
                 const resolved = Math.floor(progress * text.length)
                 let result = ''
                 for (let i = 0; i < text.length; i++) {
@@ -282,10 +293,11 @@ function TextScramble({ text, isVisible, delay = 0 }: { text: string; isVisible:
                     result += chars[Math.floor(Math.random() * chars.length)]
                 }
                 setDisplay(result)
-                if (frame >= totalFrames) { setDisplay(text); clearInterval(interval) }
-            }, 30)
+                if (progress < 1) { rafId = requestAnimationFrame(tick) } else { setDisplay(text) }
+            }
+            rafId = requestAnimationFrame(tick)
         }, delay)
-        return () => clearTimeout(timeout)
+        return () => { clearTimeout(timeoutId); cancelAnimationFrame(rafId) }
     }, [isVisible, text, delay])
 
     return <>{display || '\u00A0'.repeat(text.length)}</>
@@ -293,8 +305,9 @@ function TextScramble({ text, isVisible, delay = 0 }: { text: string; isVisible:
 
 /* ─────────────── Floating Particles (Enhanced) ─────────────── */
 function FloatingParticles() {
-    const particles = useMemo(() =>
-        Array.from({ length: 50 }, (_, i) => ({
+    const particles = useMemo(() => {
+        const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+        return Array.from({ length: isMobile ? 20 : 50 }, (_, i) => ({
             id: i,
             x: Math.random() * 100,
             y: Math.random() * 100,
@@ -302,9 +315,9 @@ function FloatingParticles() {
             duration: Math.random() * 20 + 8,
             delay: Math.random() * 15,
             opacity: Math.random() * 0.4 + 0.05,
-            glow: i < 8, // first 8 particles are larger + glow
-        })),
-        [])
+            glow: i < 8,
+        }))
+    }, [])
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -450,7 +463,7 @@ function IntakeFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 style={{ animation: 'fadeIn 0.3s ease-out' }} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700/50 rounded-3xl shadow-2xl shadow-indigo-500/10"
+            <div role="dialog" aria-modal="true" aria-labelledby="modal-title" className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700/50 rounded-3xl shadow-2xl shadow-indigo-500/10"
                 style={{ animation: 'modalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
 
                 {/* Close button */}
@@ -475,7 +488,7 @@ function IntakeFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                         <>
                             {/* Header */}
                             <div className="mb-8">
-                                <h3 className="text-2xl font-black text-white">Build my website</h3>
+                                <h3 id="modal-title" className="text-2xl font-black text-white">Build my website</h3>
                                 <p className="text-sm text-slate-400 mt-1">Tell us about your business and we'll build it for you.</p>
                             </div>
 
@@ -498,26 +511,26 @@ function IntakeFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                             {step === 1 && (
                                 <div className="space-y-4" style={{ animation: 'slideStep 0.3s ease-out' }}>
                                     <div>
-                                        <label className={labelClass}>Full Name *</label>
-                                        <input className={inputClass} placeholder="John Smith" value={form.fullName} onChange={e => update('fullName', e.target.value)} />
+                                        <label htmlFor="fullName" className={labelClass}>Full Name *</label>
+                                        <input id="fullName" className={inputClass} placeholder="John Smith" value={form.fullName} onChange={e => update('fullName', e.target.value)} />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <label className={labelClass}>Email *</label>
-                                            <input className={inputClass} type="email" placeholder="john@email.com" value={form.email} onChange={e => update('email', e.target.value)} />
+                                            <label htmlFor="email" className={labelClass}>Email *</label>
+                                            <input id="email" className={inputClass} type="email" placeholder="john@email.com" value={form.email} onChange={e => update('email', e.target.value)} />
                                         </div>
                                         <div>
-                                            <label className={labelClass}>Phone</label>
-                                            <input className={inputClass} type="tel" placeholder="(555) 123-4567" value={form.phone} onChange={e => update('phone', e.target.value)} />
+                                            <label htmlFor="phone" className={labelClass}>Phone</label>
+                                            <input id="phone" className={inputClass} type="tel" placeholder="(555) 123-4567" value={form.phone} onChange={e => update('phone', e.target.value)} />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Business Name *</label>
-                                        <input className={inputClass} placeholder="Your business or brand name" value={form.businessName} onChange={e => update('businessName', e.target.value)} />
+                                        <label htmlFor="businessName" className={labelClass}>Business Name *</label>
+                                        <input id="businessName" className={inputClass} placeholder="Your business or brand name" value={form.businessName} onChange={e => update('businessName', e.target.value)} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Current Website (if any)</label>
-                                        <input className={inputClass} placeholder="https://..." value={form.currentWebsite} onChange={e => update('currentWebsite', e.target.value)} />
+                                        <label htmlFor="currentWebsite" className={labelClass}>Current Website (if any)</label>
+                                        <input id="currentWebsite" className={inputClass} placeholder="https://..." value={form.currentWebsite} onChange={e => update('currentWebsite', e.target.value)} />
                                     </div>
                                 </div>
                             )}
@@ -526,23 +539,23 @@ function IntakeFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                             {step === 2 && (
                                 <div className="space-y-4" style={{ animation: 'slideStep 0.3s ease-out' }}>
                                     <div>
-                                        <label className={labelClass}>Industry *</label>
-                                        <select className={inputClass + ' cursor-pointer'} value={form.industry} onChange={e => update('industry', e.target.value)}>
+                                        <label htmlFor="industry" className={labelClass}>Industry *</label>
+                                        <select id="industry" className={inputClass + ' cursor-pointer'} value={form.industry} onChange={e => update('industry', e.target.value)}>
                                             <option value="" className="bg-slate-800">Select your industry...</option>
                                             {INDUSTRIES.map(ind => <option key={ind} value={ind} className="bg-slate-800">{ind}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className={labelClass}>What services do you offer? *</label>
-                                        <textarea className={inputClass + ' resize-none h-20'} placeholder="e.g. Home buying, selling, property management..." value={form.services} onChange={e => update('services', e.target.value)} />
+                                        <label htmlFor="services" className={labelClass}>What services do you offer? *</label>
+                                        <textarea id="services" className={inputClass + ' resize-none h-20'} placeholder="e.g. Home buying, selling, property management..." value={form.services} onChange={e => update('services', e.target.value)} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Who are your ideal clients?</label>
-                                        <input className={inputClass} placeholder="e.g. First-time homebuyers in Miami" value={form.targetAudience} onChange={e => update('targetAudience', e.target.value)} />
+                                        <label htmlFor="targetAudience" className={labelClass}>Who are your ideal clients?</label>
+                                        <input id="targetAudience" className={inputClass} placeholder="e.g. First-time homebuyers in Miami" value={form.targetAudience} onChange={e => update('targetAudience', e.target.value)} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Social Media Links</label>
-                                        <input className={inputClass} placeholder="Instagram, Facebook, LinkedIn URLs..." value={form.socialMedia} onChange={e => update('socialMedia', e.target.value)} />
+                                        <label htmlFor="socialMedia" className={labelClass}>Social Media Links</label>
+                                        <input id="socialMedia" className={inputClass} placeholder="Instagram, Facebook, LinkedIn URLs..." value={form.socialMedia} onChange={e => update('socialMedia', e.target.value)} />
                                     </div>
                                 </div>
                             )}
@@ -568,8 +581,8 @@ function IntakeFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                                         </div>
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Anything else we should know?</label>
-                                        <textarea className={inputClass + ' resize-none h-24'} placeholder="Special features, color preferences, inspiration sites, or anything you want us to include..." value={form.notes} onChange={e => update('notes', e.target.value)} />
+                                        <label htmlFor="notes" className={labelClass}>Anything else we should know?</label>
+                                        <textarea id="notes" className={inputClass + ' resize-none h-24'} placeholder="Special features, color preferences, inspiration sites, or anything you want us to include..." value={form.notes} onChange={e => update('notes', e.target.value)} />
                                     </div>
                                 </div>
                             )}
@@ -646,7 +659,28 @@ export function LandingPage() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
+        <main className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
+            <Helmet>
+                <title>Siteo | The AI Website Builder for Real Estate</title>
+                <meta name="description" content="Siteo builds powerful AI acquisition funnels and websites for real estate agents in just three days, not three months." />
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": ["Organization", "SoftwareApplication"],
+                        "name": "Siteo AI",
+                        "url": "https://siteo.io",
+                        "logo": "https://siteo.io/siteo-icon.png",
+                        "applicationCategory": "BusinessApplication",
+                        "operatingSystem": "All",
+                        "description": "AI-powered website builder for real estate agents.",
+                        "offers": {
+                            "@type": "Offer",
+                            "price": "0",
+                            "priceCurrency": "USD"
+                        }
+                    })}
+                </script>
+            </Helmet>
             <NoiseOverlay />
 
             {/* ═══ HERO ═══ */}
@@ -678,13 +712,13 @@ export function LandingPage() {
                                 opacity: mounted ? 1 : 0,
                                 transform: mounted ? 'translateX(0)' : 'translateX(-30px)',
                             }}>
-                                <span className="text-4xl font-black tracking-tighter text-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+                                <span className="text-4xl font-black tracking-tighter text-white font-heading">
                                     site<span style={{ background: 'linear-gradient(135deg, #818cf8, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>o</span>
                                 </span>
                             </div>
 
                             {/* Headline */}
-                            <h1 className="transition-all duration-1000 delay-200" style={{
+                            <h1 className="transition-all duration-1000 delay-200 font-heading" style={{
                                 opacity: mounted ? 1 : 0,
                                 transform: mounted ? 'translateY(0)' : 'translateY(40px)',
                             }}>
@@ -766,7 +800,6 @@ export function LandingPage() {
 
                 {/* ── How it Works + CTA ── */}
                 <motion.div className="max-w-6xl mx-auto px-6 md:px-12 py-32 relative"
-                    onViewportEnter={() => { }} // This triggers framer motion viewport hooks if desired
                     viewport={{ margin: "0px 0px -200px 0px" }}>
 
                     {/* Vertical scroll progress beam — glows as you scroll */}
@@ -797,7 +830,7 @@ export function LandingPage() {
                         <span className="text-xs font-bold text-indigo-400 tracking-[4px] uppercase mb-5 block font-mono">
                             <TextScramble text="HOW IT WORKS" isVisible={sectionTitle.isVisible} delay={200} />
                         </span>
-                        <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-tight font-heading">
                             <span className="inline-block transition-all duration-700 delay-300" style={{ opacity: sectionTitle.isVisible ? 1 : 0, transform: sectionTitle.isVisible ? 'translateY(0)' : 'translateY(30px)' }}>
                                 Live in{' '}
                             </span>
@@ -939,7 +972,7 @@ export function LandingPage() {
                                 {/* Inner glow line */}
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
 
-                                <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">
+                                <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 font-heading">
                                     <TextScramble text="Ready to stand out?" isVisible={ctaReveal.isVisible} delay={400} />
                                 </h2>
                                 <p className="text-base md:text-lg text-slate-400 mb-10 max-w-md mx-auto leading-relaxed">
@@ -984,7 +1017,7 @@ export function LandingPage() {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                         {/* Brand */}
                         <div className="flex flex-col items-center md:items-start gap-2">
-                            <span className="text-2xl font-black tracking-tighter text-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+                            <span className="text-2xl font-black tracking-tighter text-white font-heading">
                                 site<span style={{ background: 'linear-gradient(135deg, #818cf8, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>o</span>
                             </span>
                             <p className="text-slate-600 text-xs">Websites that work while you sleep.</p>
@@ -1062,6 +1095,6 @@ export function LandingPage() {
                     50% { transform: scale(1.15); opacity: 0.35; }
                 }
             `}</style>
-        </div>
+        </main>
     )
 }

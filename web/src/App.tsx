@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js'
 import { PlatformLogin } from './pages/PlatformLogin'
 import { Header } from './components/layout/Header'
+import { HelmetProvider } from 'react-helmet-async'
 import { AgentInput } from './components/agent/AgentInput'
 import { AgentCard } from './components/agent/AgentCard'
 
@@ -131,117 +132,119 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen text-slate-100 font-sans selection:bg-indigo-500/30 relative">
-      <Background />
+    <HelmetProvider>
+      <div className="min-h-screen text-slate-100 font-sans selection:bg-indigo-500/30 relative">
+        <Background />
 
-      <div className="relative z-10">
-        <Header />
+        <div className="relative z-10">
+          <Header />
 
-        <main className={`container mx-auto px-4 py-4 sm:py-8 transition-all duration-300 ${['leads', 'coldcalls', 'emails'].includes(view) ? 'max-w-[1600px]' : 'max-w-5xl'}`}>
-          <Tabs
-            views={[
-              { id: 'import', label: 'Single Import' },
-              { id: 'bulk', label: 'Bulk Import' },
-              { id: 'leads', label: 'My Leads' },
-              { id: 'coldcalls', label: 'Cold Calls' },
-              { id: 'emails', label: 'Email Logs' }
-            ]}
-            currentView={view}
-            onChange={setView}
-          />
+          <main className={`container mx-auto px-4 py-4 sm:py-8 transition-all duration-300 ${['leads', 'coldcalls', 'emails'].includes(view) ? 'max-w-[1600px]' : 'max-w-5xl'}`}>
+            <Tabs
+              views={[
+                { id: 'import', label: 'Single Import' },
+                { id: 'bulk', label: 'Bulk Import' },
+                { id: 'leads', label: 'My Leads' },
+                { id: 'coldcalls', label: 'Cold Calls' },
+                { id: 'emails', label: 'Email Logs' }
+              ]}
+              currentView={view}
+              onChange={setView}
+            />
 
-          {view === 'import' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {/* Input Section */}
-              {!profile && (
-                <>
-                  <AgentInput
-                    url={url}
-                    isLoading={loading}
-                    onUrlChange={setUrl}
-                    onSubmit={handleExtract}
-                    buttonText="Fetch Profile"
-                  />
+            {view === 'import' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Input Section */}
+                {!profile && (
+                  <>
+                    <AgentInput
+                      url={url}
+                      isLoading={loading}
+                      onUrlChange={setUrl}
+                      onSubmit={handleExtract}
+                      buttonText="Fetch Profile"
+                    />
 
-                  {/* Error Message */}
-                  {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 backdrop-blur-md rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2 shadow-lg">
-                      <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="text-red-400 text-sm">{error}</p>
+                    {/* Error Message */}
+                    {error && (
+                      <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 backdrop-blur-md rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2 shadow-lg">
+                        <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-red-400 text-sm">{error}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Loading State */}
+                {loading && !profile && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="relative">
+                      <div className="w-16 h-16 border-4 border-slate-700/50 border-t-indigo-500 rounded-full animate-spin"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-xs font-bold text-indigo-500">CB</span>
+                      </div>
                     </div>
-                  )}
-                </>
-              )}
+                    <p className="mt-4 text-slate-400 font-medium animate-pulse">Analyzing Agent Profile...</p>
+                    <p className="text-xs text-slate-600 mt-2">Connecting to Coldwell Banker Realty</p>
+                  </div>
+                )}
 
-              {/* Loading State */}
-              {loading && !profile && (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="relative">
-                    <div className="w-16 h-16 border-4 border-slate-700/50 border-t-indigo-500 rounded-full animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-bold text-indigo-500">CB</span>
+                {/* Results Section */}
+                {profile && (
+                  <div className="animate-in zoom-in-95 duration-300">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                        <span className="w-2 h-8 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></span>
+                        Extracted Profile
+                      </h2>
+                      <button
+                        onClick={handleReset}
+                        className="text-slate-400 hover:text-white text-sm font-medium hover:underline transition-colors"
+                      >
+                        ← Extract Another
+                      </button>
                     </div>
+
+                    <AgentCard
+                      profile={profile}
+                      state={saveState}
+                      onSave={() => { }}
+                      onCancel={handleReset}
+                    />
                   </div>
-                  <p className="mt-4 text-slate-400 font-medium animate-pulse">Analyzing Agent Profile...</p>
-                  <p className="text-xs text-slate-600 mt-2">Connecting to Coldwell Banker Realty</p>
-                </div>
-              )}
+                )}
+              </div>
+            )}
 
-              {/* Results Section */}
-              {profile && (
-                <div className="animate-in zoom-in-95 duration-300">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                      <span className="w-2 h-8 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></span>
-                      Extracted Profile
-                    </h2>
-                    <button
-                      onClick={handleReset}
-                      className="text-slate-400 hover:text-white text-sm font-medium hover:underline transition-colors"
-                    >
-                      ← Extract Another
-                    </button>
-                  </div>
+            {view === 'bulk' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <BulkImport />
+              </div>
+            )}
 
-                  <AgentCard
-                    profile={profile}
-                    state={saveState}
-                    onSave={() => { }}
-                    onCancel={handleReset}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+            {view === 'leads' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <LeadsList />
+              </div>
+            )}
 
-          {view === 'bulk' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <BulkImport />
-            </div>
-          )}
+            {view === 'emails' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <EmailLogs />
+              </div>
+            )}
 
-          {view === 'leads' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <LeadsList />
-            </div>
-          )}
-
-          {view === 'emails' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <EmailLogs />
-            </div>
-          )}
-
-          {view === 'coldcalls' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ColdCallsList />
-            </div>
-          )}
-        </main>
+            {view === 'coldcalls' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <ColdCallsList />
+              </div>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </HelmetProvider>
   )
 }
 
