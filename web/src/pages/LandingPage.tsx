@@ -186,11 +186,11 @@ function MagneticButton({ children, href }: { children: React.ReactNode; href: s
             <div className="absolute -inset-3 rounded-3xl opacity-0 group-hover:opacity-100 blur-2xl transition-all duration-500"
                 style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.4), transparent 70%)' }} />
 
-            {/* Rotating border */}
+            {/* Rotating border — spin disabled on touch/mobile, static gradient instead */}
             <div className="absolute -inset-[2px] rounded-2xl overflow-hidden">
                 <div className="absolute inset-0" style={{
                     background: 'conic-gradient(from 0deg, #6366f1, #8b5cf6, #c084fc, #6366f1)',
-                    animation: 'spin 4s linear infinite',
+                    animation: isTouch ? 'none' : 'spin 4s linear infinite',
                 }} />
             </div>
 
@@ -305,9 +305,10 @@ function TextScramble({ text, isVisible, delay = 0 }: { text: string; isVisible:
 
 /* ─────────────── Floating Particles (Enhanced) ─────────────── */
 function FloatingParticles() {
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
     const particles = useMemo(() => {
-        const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
-        return Array.from({ length: isMobile ? 20 : 50 }, (_, i) => ({
+        if (isMobile) return []
+        return Array.from({ length: 50 }, (_, i) => ({
             id: i,
             x: Math.random() * 100,
             y: Math.random() * 100,
@@ -317,7 +318,9 @@ function FloatingParticles() {
             opacity: Math.random() * 0.4 + 0.05,
             glow: i < 8,
         }))
-    }, [])
+    }, [isMobile])
+
+    if (particles.length === 0) return null
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -459,7 +462,7 @@ function IntakeFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose}
+            <div className="absolute inset-0 bg-slate-950/80 md:backdrop-blur-sm" onClick={onClose}
                 style={{ animation: 'fadeIn 0.3s ease-out' }} />
 
             {/* Modal */}
@@ -629,6 +632,7 @@ function IntakeFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 export function LandingPage() {
     const [mounted, setMounted] = useState(false)
     const [showIntakeForm, setShowIntakeForm] = useState(false)
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
 
     // Scroll reveal refs for section 2
     const sectionTitle = useScrollReveal({ threshold: 0.2 })
@@ -688,12 +692,12 @@ export function LandingPage() {
                     })}
                 </script>
             </Helmet>
-            <NoiseOverlay />
+            {!isMobile && <NoiseOverlay />}
 
             {/* ═══ HERO ═══ */}
             <section className="relative min-h-screen flex items-center overflow-hidden">
-                {/* Background aurora */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-25 pointer-events-none"
+                {/* Background aurora — desktop only, blur-[120px] is too heavy on mobile */}
+                <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-25 pointer-events-none"
                     style={{ animation: 'aurora 12s ease-in-out infinite alternate' }}>
                     <div className="w-full h-full rounded-full blur-[120px]"
                         style={{ background: 'conic-gradient(from 0deg, #6366f1, #8b5cf6, #a78bfa, transparent, #6366f1)' }} />
@@ -781,8 +785,8 @@ export function LandingPage() {
                 {/* Top edge line */}
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
 
-                {/* Parallax background glow */}
-                <motion.div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full blur-[200px] opacity-10 pointer-events-none"
+                {/* Parallax background glow — desktop only, blur-[200px] is too heavy on mobile */}
+                <motion.div className="hidden md:block absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full blur-[200px] opacity-10 pointer-events-none"
                     style={{ background: 'radial-gradient(circle, #6366f1, #7c3aed, transparent)', x: "-50%", y: parallaxGlowY }} />
 
                 {/* Floating particles */}
@@ -928,7 +932,7 @@ export function LandingPage() {
 
                                     {/* 3D Tilt Card */}
                                     <TiltCard className="group">
-                                        <div className="relative rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm p-8 transition-all duration-500 hover:border-indigo-500/20 hover:bg-white/[0.04]"
+                                        <div className="relative rounded-2xl border border-white/5 bg-white/[0.02] md:backdrop-blur-sm p-8 transition-all duration-500 hover:border-indigo-500/20 hover:bg-white/[0.04]"
                                             style={{ transformStyle: 'preserve-3d' }}>
                                             {/* Shine effect on hover */}
                                             <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
@@ -954,8 +958,8 @@ export function LandingPage() {
                             transitionDuration: '1.4s',
                             transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
                         }}>
-                        {/* Breathing radial glow */}
-                        <div className="absolute w-[600px] h-[600px] rounded-full blur-[180px] pointer-events-none"
+                        {/* Breathing radial glow — desktop only, blur-[180px] is too heavy on mobile */}
+                        <div className="hidden md:block absolute w-[600px] h-[600px] rounded-full blur-[180px] pointer-events-none"
                             style={{
                                 background: 'radial-gradient(circle, #6366f1, #7c3aed, transparent)',
                                 opacity: ctaReveal.isVisible ? 0.25 : 0,
@@ -963,11 +967,11 @@ export function LandingPage() {
                                 animation: ctaReveal.isVisible ? 'breathe 4s ease-in-out infinite' : 'none',
                             }} />
 
-                        {/* Animated border ring */}
+                        {/* Animated border ring — spin disabled on mobile */}
                         <div className="absolute w-[calc(100%+4px)] h-[calc(100%+4px)] rounded-[28px] pointer-events-none"
                             style={{
                                 background: 'conic-gradient(from 0deg, #6366f1, #a78bfa, #c084fc, #6366f1)',
-                                animation: 'spin 6s linear infinite',
+                                animation: isMobile ? 'none' : 'spin 6s linear infinite',
                                 filter: 'blur(1px)',
                                 opacity: ctaReveal.isVisible ? 0.6 : 0,
                                 transition: 'opacity 1.5s',
@@ -975,7 +979,7 @@ export function LandingPage() {
 
                         {/* Card */}
                         <TiltCard className="relative max-w-2xl w-full">
-                            <div className="rounded-[26px] bg-slate-950/90 backdrop-blur-xl px-8 md:px-16 py-16 text-center border border-white/5">
+                            <div className="rounded-[26px] bg-slate-950/90 md:backdrop-blur-xl px-8 md:px-16 py-16 text-center border border-white/5">
                                 {/* Inner glow line */}
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
 
@@ -1019,7 +1023,7 @@ export function LandingPage() {
             </section>
 
             {/* Footer */}
-            <footer className="relative z-20 border-t border-white/5 bg-slate-950/90 backdrop-blur-xl">
+            <footer className="relative z-20 border-t border-white/5 bg-slate-950/90 md:backdrop-blur-xl">
                 <div className="container mx-auto px-6 max-w-6xl py-12">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                         {/* Brand */}
