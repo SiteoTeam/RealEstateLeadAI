@@ -195,7 +195,7 @@ function MagneticButton({ children, href }: { children: React.ReactNode; href: s
             </div>
 
             {/* Inner */}
-            <div className="relative flex items-center gap-3 px-10 py-5 text-lg font-bold text-white rounded-2xl overflow-hidden bg-slate-950">
+            <div className="relative flex items-center gap-3 px-7 py-4 md:px-10 md:py-5 text-base md:text-lg font-bold text-white rounded-2xl overflow-hidden bg-slate-950">
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{ background: 'linear-gradient(135deg, #4338ca, #6366f1)' }} />
                 <svg className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -656,6 +656,13 @@ export function LandingPage() {
 
     useEffect(() => {
         requestAnimationFrame(() => setMounted(true))
+        // Override the global white body background from index.css so mobile overscroll doesn't show white
+        document.documentElement.style.backgroundColor = '#020617'
+        document.body.style.backgroundColor = '#020617'
+        return () => {
+            document.documentElement.style.backgroundColor = ''
+            document.body.style.backgroundColor = ''
+        }
     }, [])
 
     return (
@@ -701,14 +708,14 @@ export function LandingPage() {
                 }} />
 
                 {/* Two-column layout */}
-                <motion.div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-20"
+                <motion.div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-14 md:py-20"
                     style={{ opacity: heroOpacity, y: heroTranslateY, transition: 'opacity 0.1s, transform 0.1s' }}>
-                    <div className="grid lg:grid-cols-2 gap-16 lg:gap-8 items-center">
+                    <div className="grid lg:grid-cols-2 gap-10 lg:gap-8 items-center">
 
                         {/* Left — Copy */}
                         <div>
                             {/* Logo */}
-                            <div className="mb-10 transition-all duration-1000" style={{
+                            <div className="mb-6 md:mb-10 transition-all duration-1000" style={{
                                 opacity: mounted ? 1 : 0,
                                 transform: mounted ? 'translateX(0)' : 'translateX(-30px)',
                             }}>
@@ -722,24 +729,24 @@ export function LandingPage() {
                                 opacity: mounted ? 1 : 0,
                                 transform: mounted ? 'translateY(0)' : 'translateY(40px)',
                             }}>
-                                <span className="block text-5xl sm:text-6xl md:text-7xl font-black leading-[1.05] tracking-tight">
+                                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight">
                                     We build it.
                                 </span>
-                                <span className="block text-5xl sm:text-6xl md:text-7xl font-black leading-[1.05] tracking-tight mt-1"
+                                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mt-1"
                                     style={{ background: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                                     You close deals.
                                 </span>
                             </h1>
 
                             {/* Subtitle */}
-                            <p className="text-lg md:text-xl text-slate-400 mt-8 max-w-lg leading-relaxed transition-all duration-1000 delay-500"
+                            <p className="text-base md:text-xl text-slate-400 mt-5 md:mt-8 max-w-lg leading-relaxed transition-all duration-1000 delay-500"
                                 style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(30px)' }}>
                                 AI-powered lead funnels that capture clients, book appointments, and make
                                 you look like the #1 choice in your market <span className="text-slate-200 font-semibold">in <AnimatedNumber target={24} suffix=" hours" />.</span>
                             </p>
 
                             {/* CTA */}
-                            <div className="mt-10 flex flex-col sm:flex-row items-start gap-5 transition-all duration-1000 delay-700"
+                            <div className="mt-7 md:mt-10 flex flex-col sm:flex-row items-start gap-5 transition-all duration-1000 delay-700"
                                 style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(20px)' }}>
                                 <MagneticButton href="https://calendly.com/siteoteam/30min">
                                     Book a Demo
@@ -751,8 +758,8 @@ export function LandingPage() {
                             </div>
                         </div>
 
-                        {/* Right — Animated mockup */}
-                        <div className="transition-all duration-[1.5s] delay-300"
+                        {/* Right — Animated mockup (desktop only — too wide for mobile) */}
+                        <div className="hidden lg:block transition-all duration-[1.5s] delay-300"
                             style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0) scale(1)' : 'translateY(60px) scale(0.9)' }}>
                             <WebsiteMockup />
                         </div>
