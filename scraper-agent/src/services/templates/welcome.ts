@@ -1,4 +1,6 @@
 
+const GEORGE_HEADSHOT = 'https://jqtrgdmjosegilmbxino.supabase.co/storage/v1/object/public/agent-assets/george-headshot.png';
+
 export const getWelcomeEmailHtml = (
   agentName: string,
   agentEmail: string,
@@ -45,31 +47,36 @@ export const getWelcomeEmailHtml = (
       </p>
 
       <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:24px;">
-        We put together a quick mock-up of what your own page could look like — clean, branded, and built to capture leads instead of sending them elsewhere.
+        I put together a quick mock-up of what your own page could look like — clean, branded, and built to capture leads instead of sending them elsewhere.
       </p>
 
       <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:32px;">
         Worth a look?
       </p>
 
-      <p style="text-align:center; margin-bottom:32px;">
+      <p style="text-align:center; margin-bottom:40px;">
         <a href="${websiteUrl}" style="display:inline-block; background-color:#4f46e5; color:#ffffff; font-size:16px; font-weight:bold; text-decoration:none; padding:12px 24px; border-radius:8px;">
           See Your Preview
         </a>
       </p>
 
-      <p style="font-size:16px; color:#334155; line-height:1.6;">
-        – George at Siteo
-      </p>
-
-      <div style="margin-top:32px; border-top:1px solid #f1f5f9; padding-top:24px;">
-        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 4px 0;">
-          <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
-        </p>
-        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
-          <a href="tel:+16268849546" style="color:#4f46e5; text-decoration:none;">(626) 884-9546</a>
-        </p>
-      </div>
+      <!-- Signature -->
+      <table cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;">
+        <tr>
+          <td style="padding-right:14px; vertical-align:middle;">
+            <img src="${GEORGE_HEADSHOT}" alt="George" width="56" height="56" style="width:56px; height:56px; border-radius:50%; object-fit:cover; display:block;" />
+          </td>
+          <td style="vertical-align:middle;">
+            <p style="margin:0; font-size:15px; font-weight:600; color:#0f172a; line-height:1.4;">George</p>
+            <p style="margin:0; font-size:13px; color:#6366f1; line-height:1.4;">Siteo</p>
+            <p style="margin:4px 0 0; font-size:13px; color:#64748b; line-height:1.4;">
+              <a href="mailto:george@siteo.io" style="color:#64748b; text-decoration:none;">george@siteo.io</a>
+              &nbsp;·&nbsp;
+              <a href="tel:+16268849546" style="color:#64748b; text-decoration:none;">(626) 884-9546</a>
+            </p>
+          </td>
+        </tr>
+      </table>
 
     </div>
 
