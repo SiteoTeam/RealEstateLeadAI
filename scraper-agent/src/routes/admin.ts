@@ -593,13 +593,6 @@ router.post('/cron/run-batch', async (req, res) => {
     }
 
     try {
-        // ── Send Window: Tue–Thu only (0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat) ──
-        const dayOfWeek = new Date().getUTCDay();
-        if (dayOfWeek < 2 || dayOfWeek > 4) {
-            console.log(`[Cron] Skipping — outside send window (day ${dayOfWeek})`);
-            return res.json({ success: true, skipped: true, reason: 'outside_send_window' });
-        }
-
         console.log('[Cron] Running email sequence batch...');
 
         const {

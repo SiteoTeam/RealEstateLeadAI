@@ -2,7 +2,7 @@ name: Email Sequence Batch
 
 on:
   schedule:
-    - cron: '0 14 * * 2-4'  # 2pm UTC, Tue/Wed/Thu
+    - cron: '0 14 * * *'  # 2pm UTC, every day
   workflow_dispatch: # Allow manual trigger from GitHub UI
 
 jobs:
