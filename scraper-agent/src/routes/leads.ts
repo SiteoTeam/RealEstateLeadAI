@@ -28,6 +28,15 @@ router.post('/extract', verifySupabaseUser, async (req, res) => {
             return res.status(422).json(profile);
         }
 
+        // Block agents without an email — nothing useful can be done with them
+        if (!profile.email) {
+            return res.status(422).json({
+                ...profile,
+                extraction_success: false,
+                extraction_errors: ['No email address found for this agent. Profile not saved.']
+            });
+        }
+
         // Auto-Save to Database
         console.log('[API] Auto-saving profile to Lead Management System...');
         const saveResult = await saveProfile(profile);

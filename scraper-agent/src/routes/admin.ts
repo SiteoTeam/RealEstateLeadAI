@@ -640,6 +640,64 @@ router.post('/cron/run-batch', async (req, res) => {
     }
 });
 
+// Purge agents with no email - PROTECTED
+// POST /api/admin/purge-no-email
+router.post('/purge-no-email', verifySupabaseUser, async (_req, res) => {
+    try {
+        const db = getDb();
+        if (!db) return res.status(500).json({ error: 'Database not available' });
+
+        // Find all agents with null or empty primary_email
+        const { data: nullAgents, error: nullError } = await db
+            .from('scraped_agents')
+            .select('id')
+            .is('primary_email', null);
+
+        if (nullError) {
+            console.error('[Admin] Fetch null-email agents error:', nullError);
+            return res.status(500).json({ error: nullError.message });
+        }
+
+        const { data: emptyAgents, error: emptyError } = await db
+            .from('scraped_agents')
+            .select('id')
+            .eq('primary_email', '');
+
+        if (emptyError) {
+            console.error('[Admin] Fetch empty-email agents error:', emptyError);
+            return res.status(500).json({ error: emptyError.message });
+        }
+
+        const ids = [
+            ...(nullAgents || []),
+            ...(emptyAgents || [])
+        ].map((a: any) => a.id);
+
+        if (ids.length === 0) {
+            return res.json({ success: true, deleted: 0 });
+        }
+
+        console.log(`[Admin] Purging ${ids.length} agents with no email...`);
+
+        const { error: deleteError } = await db
+            .from('scraped_agents')
+            .delete()
+            .in('id', ids);
+
+        if (deleteError) {
+            console.error('[Admin] Delete error:', deleteError);
+            return res.status(500).json({ error: deleteError.message });
+        }
+
+        console.log(`[Admin] Purged ${ids.length} no-email agents.`);
+        res.json({ success: true, deleted: ids.length });
+
+    } catch (err: any) {
+        console.error('[Admin] Purge no-email error:', err);
+        res.status(500).json({ error: err.message || 'Internal server error' });
+    }
+});
+
 export const adminRoutes = router;
 
 // CRON: Prune Expired Trials (Delete unpaid agents > 30 days)

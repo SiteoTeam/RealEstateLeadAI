@@ -275,6 +275,19 @@ export const adminApi = {
         return response.json()
     },
 
+    purgeNoEmail: async () => {
+        const response = await fetch(`${API_BASE}/api/admin/purge-no-email`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}))
+            throw new Error(err.error || 'Failed to purge agents')
+        }
+        return response.json() as Promise<{ success: boolean; deleted: number }>
+    },
+
     // Log Access (for analytics/tracking)
     logAccess: async (token: string, source: string) => {
         try {
