@@ -74,6 +74,11 @@ export const getWelcomeEmailHtml = (
               &nbsp;·&nbsp;
               <a href="tel:+16268849546" style="color:#64748b; text-decoration:none;">(626) 884-9546</a>
             </p>
+            <p style="margin:6px 0 0; font-size:13px; line-height:1.4;">
+              <a href="https://calendly.com/siteoteam/30min" style="color:#4f46e5; text-decoration:none; font-weight:600;">📅 Book a call</a>
+              &nbsp;&nbsp;
+              <a href="https://www.instagram.com/web.dev.george/" style="color:#64748b; text-decoration:none;">Instagram</a>
+            </p>
           </td>
         </tr>
       </table>

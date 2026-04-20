@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion'
-import { Mail, Phone, MapPin, Linkedin, Facebook, Instagram, Twitter, Youtube, TrendingUp, ArrowDown, Home, BarChart2, Building, BadgeCheck, Minus } from 'lucide-react'
+import { Mail, Phone, MapPin, Linkedin, Facebook, Instagram, Twitter, Youtube, TrendingUp, ArrowDown, Home, BarChart2, Building, BadgeCheck, Minus, X } from 'lucide-react'
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3'
 import { getWebsiteBySlug, type DBProfile } from '../services/api'
 import { getThemeConfig } from '../utils/theme'
@@ -252,6 +252,14 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
         }
     }
 
+    const handleCtaClick = () => {
+        if (searchParams.get('source') === 'email') {
+            window.location.href = `/w/${slug}/admin/login`
+        } else {
+            setBookingOpen(true)
+        }
+    }
+
     // --- UI HOOKS ---
     const heroRef = useRef<HTMLDivElement>(null)
     const { scrollYProgress } = useScroll({
@@ -357,10 +365,10 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                     // @ts-ignore
                     "--text-muted": localConfig.textMuted || '#64748b', // slate-500
                     // @ts-ignore
-                    "--text-inv": localConfig.textInv || '#ffffff'
                 }}
             >
-                <FloatingNavbar agent={agent} onBookClick={() => setBookingOpen(true)} />
+                <FloatingNavbar agent={agent} onBookClick={handleCtaClick} sourceContext={searchParams.get('source')} />
+                {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
 
                 {isEditing && (
                     <VisualEditorToolbar
@@ -377,27 +385,37 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                     />
                 )}
 
-                {/* Preview Notice Subtitle (One-time) */}
-                {/* Preview Notice Subtitle (One-time) */}
+                {/* Sticky Preview Claim Banner */}
                 {showPreviewNotice && (
                     <motion.div
-                        initial={{ opacity: 0, y: -20 }}
+                        initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="fixed top-24 left-0 right-0 z-[100] pointer-events-none flex justify-center px-4"
+                        className="fixed bottom-0 left-0 right-0 z-[100] bg-indigo-600 text-white shadow-2xl border-t border-indigo-500"
                     >
-                        <div className="bg-white/95 backdrop-blur-xl border border-indigo-200 shadow-2xl rounded-full px-8 py-4 flex items-center gap-4 pointer-events-auto transform hover:scale-[1.02] transition-transform">
-                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                                <BadgeCheck className="w-5 h-5 text-green-600" />
+                        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-500 rounded-full hidden sm:block flex-shrink-0">
+                                    <BadgeCheck className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg leading-tight">Private Preview for {agent?.full_name.split(' ')[0]}</h3>
+                                    <p className="text-indigo-100 text-sm">We've built this high-converting site for you. Claim it free for 14 days.</p>
+                                </div>
                             </div>
-                            <div className="text-base font-medium text-slate-800">
-                                Private Access Enabled. <span className="text-slate-600 font-normal">Your secure admin link has been sent to your email.</span>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <a
+                                    href={`/w/${slug}/admin/login`}
+                                    className="flex-1 sm:flex-none px-6 py-2.5 bg-white text-indigo-600 font-bold rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap text-center text-sm shadow-sm"
+                                >
+                                    Claim This Website
+                                </a>
+                                <button
+                                    onClick={handleDismissNotice}
+                                    className="p-2.5 text-indigo-200 hover:text-white hover:bg-indigo-500 rounded-lg transition-colors flex-shrink-0"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-                            <button
-                                onClick={handleDismissNotice}
-                                className="ml-2 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition-colors"
-                            >
-                                <Minus className="w-5 h-5" />
-                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -1255,6 +1273,6 @@ export function PublicWebsite({ slug: propSlug }: { slug?: string }) {
                 {/* Claim Banner - Only show if not paid and not editing */}
                 {/* Claim Banner Removed */}
             </div>
-        </GoogleReCaptchaProvider>
+        </GoogleReCaptchaProvider >
     )
 }

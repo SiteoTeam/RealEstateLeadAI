@@ -6,9 +6,10 @@ import { Menu, X } from 'lucide-react'
 interface FloatingNavbarProps {
     agent: DBProfile
     onBookClick: () => void
+    sourceContext?: string | null
 }
 
-export function FloatingNavbar({ agent, onBookClick }: FloatingNavbarProps) {
+export function FloatingNavbar({ agent, onBookClick, sourceContext }: FloatingNavbarProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isScrolled, setIsScrolled] = useState(false)
     const { scrollY } = useScroll()
@@ -83,9 +84,9 @@ export function FloatingNavbar({ agent, onBookClick }: FloatingNavbarProps) {
                         onClick={onBookClick}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="ml-2 px-5 py-2 bg-slate-900 text-white text-sm font-semibold rounded-full hover:bg-slate-800 transition-colors"
+                        className={`ml-2 px-5 py-2 text-sm font-semibold rounded-full transition-colors ${sourceContext === 'email' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
                     >
-                        Let's Talk
+                        {sourceContext === 'email' ? 'Claim This Website' : "Let's Talk"}
                     </motion.button>
                 </motion.div>
             </motion.nav>
@@ -154,9 +155,9 @@ export function FloatingNavbar({ agent, onBookClick }: FloatingNavbarProps) {
                                         setIsOpen(false)
                                         onBookClick()
                                     }}
-                                    className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl active:scale-[0.98] transition-all"
+                                    className={`w-full py-4 text-white font-bold rounded-xl active:scale-[0.98] transition-all ${sourceContext === 'email' ? 'bg-indigo-600' : 'bg-slate-900'}`}
                                 >
-                                    Let's Talk
+                                    {sourceContext === 'email' ? 'Claim This Website' : "Let's Talk"}
                                 </button>
                             </div>
                         </div>

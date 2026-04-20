@@ -15,7 +15,7 @@ if (!apiKey) {
 export const resend = apiKey ? new Resend(apiKey) : null;
 
 // The "From" email must be from your verified domain
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'George@siteo.io';
+const FROM_EMAIL = 'George <george@siteo.io>';
 
 /* ... (Contact Email and others remain valid, adding Unsubscribe mostly to "Marketing" emails like Welcome/Audit) ... */
 

@@ -1,9 +1,6 @@
-
-import * as dotenv from 'dotenv';
-import { getUncontactedLeads, markLeadAsContacted } from './src/services/db';
-import { sendAdminAccessEmail } from './src/services/email';
-
-dotenv.config();
+import 'dotenv/config';
+import { getUncontactedLeads, markLeadAsContacted, advanceLeadSequence } from './src/services/db';
+import { sendWelcomeEmail } from './src/services/email';
 
 // Configuration
 const BATCH_SIZE = 10;
@@ -52,8 +49,11 @@ async function runBatch() {
             const emailData = {
                 agentName: lead.full_name,
                 agentEmail: lead.primary_email,
+                websiteUrl: `https://siteo.io/w/${lead.website_slug || lead.id}?source=email`,
                 adminUrl: `https://siteo.io/agents/${lead.website_slug || lead.id}/admin`,
-                defaultPassword: 'welcome-siteo'
+                defaultPassword: 'welcome-siteo',
+                leadId: lead.id,
+                city: lead.city
             };
 
             // In TEST MODE, maybe override recipient?
@@ -63,18 +63,21 @@ async function runBatch() {
             // emailData.agentEmail = TEST_EMAIL;
 
             // 3. Send Email
-            const sendResult = await sendAdminAccessEmail(emailData);
+            const sendResult = await sendWelcomeEmail(emailData);
 
             if (sendResult.success) {
                 console.log('  ✓ Email sent');
 
-                // 4. Mark as contacted
-                const updateResult = await markLeadAsContacted(lead.id);
+                // 4. Mark as contacted and initiate follow-up sequence
+                const updateResult = await advanceLeadSequence(lead.id, 1);
+                // Also mark as contacted manually just in case, though advanceLeadSequence handles last_contacted_at
+                await markLeadAsContacted(lead.id);
+
                 if (updateResult.success) {
-                    console.log('  ✓ Database updated');
+                    console.log('  ✓ Database updated & entered sequence');
                     sentCount++;
                 } else {
-                    console.error('  ✗ Failed to update database:', updateResult.error);
+                    console.error('  ✗ Failed to update database sequence:', updateResult.error);
                 }
             } else {
                 console.error('  ✗ Email failed:', sendResult.error);

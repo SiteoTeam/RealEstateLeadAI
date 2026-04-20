@@ -29,7 +29,10 @@ export function DomainRouter() {
     }
 
     // Check if user is logged in
-    const token = localStorage.getItem('sb-jqtrgdmjosegilmbxino-auth-token')
+    const SUPABASE_PROJECT_REF = import.meta.env.VITE_SUPABASE_URL
+        ? new URL(import.meta.env.VITE_SUPABASE_URL).hostname.split('.')[0]
+        : '';
+    const token = SUPABASE_PROJECT_REF ? localStorage.getItem(`sb-${SUPABASE_PROJECT_REF}-auth-token`) : null;
     if (token) {
         return <App />
     }

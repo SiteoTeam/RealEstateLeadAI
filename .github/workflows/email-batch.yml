@@ -1,0 +1,19 @@
+name: Email Sequence Batch
+
+on:
+  schedule:
+    - cron: '0 14 * * 2-4'  # 2pm UTC, Tue/Wed/Thu
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  run-batch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger email batch
+        run: |
+          curl -X POST https://realestateleadai.onrender.com/api/admin/cron/run-batch \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET_GITHUB }}" \
+            -H "Content-Type: application/json" \
+            --max-time 60 \
+            --retry 2 \
+            --retry-delay 10

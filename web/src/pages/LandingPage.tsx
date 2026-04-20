@@ -156,7 +156,7 @@ function WebsiteMockup() {
 }
 
 /* ─────────────── Magnetic Button ─────────────── */
-function MagneticButton({ children, href }: { children: React.ReactNode; href: string }) {
+function MagneticButton({ children, href, onClick }: { children: React.ReactNode; href?: string; onClick?: (e: React.MouseEvent) => void }) {
     const btnRef = useRef<HTMLAnchorElement>(null)
     const [offset, setOffset] = useState({ x: 0, y: 0 })
     const [hovered, setHovered] = useState(false)
@@ -171,8 +171,11 @@ function MagneticButton({ children, href }: { children: React.ReactNode; href: s
         })
     }, [isTouch])
 
+    const Tag = href ? 'a' : 'button'
+    const props = href ? { href, target: "_blank", rel: "noopener noreferrer" } : { onClick }
+
     return (
-        <a ref={btnRef} href={href} target="_blank" rel="noopener noreferrer"
+        <Tag ref={btnRef as any} {...props}
             onMouseMove={handleMove}
             onMouseEnter={() => { if (!isTouch) setHovered(true) }}
             onMouseLeave={() => { setOffset({ x: 0, y: 0 }); setHovered(false) }}
@@ -203,7 +206,7 @@ function MagneticButton({ children, href }: { children: React.ReactNode; href: s
                 </svg>
                 <span className="relative z-10">{children}</span>
             </div>
-        </a>
+        </Tag>
     )
 }
 
@@ -733,12 +736,12 @@ export function LandingPage() {
                                 opacity: mounted ? 1 : 0,
                                 transform: mounted ? 'translateY(0)' : 'translateY(40px)',
                             }}>
-                                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight">
-                                    We build it.
+                                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-6xl font-black leading-[1.05] tracking-tight">
+                                    Get a Top-Tier Website
                                 </span>
-                                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mt-1"
+                                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-6xl font-black leading-[1.05] tracking-tight mt-1"
                                     style={{ background: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                                    You close deals.
+                                    Without Spending $5,000.
                                 </span>
                             </h1>
 
@@ -752,12 +755,19 @@ export function LandingPage() {
                             {/* CTA */}
                             <div className="mt-7 md:mt-10 flex flex-col sm:flex-row items-start gap-5 transition-all duration-1000 delay-700"
                                 style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(20px)' }}>
-                                <MagneticButton href="https://calendly.com/siteoteam/30min">
-                                    Book a Demo
-                                </MagneticButton>
-                                <div className="flex items-center gap-2 text-slate-500 text-sm self-center">
+                                <div className="flex flex-col gap-2">
+                                    <div onClick={() => setShowIntakeForm(true)}>
+                                        <MagneticButton>
+                                            Build My Free Site
+                                        </MagneticButton>
+                                    </div>
+                                    <div className="text-xs text-slate-500 text-center font-medium">
+                                        Zero setup required
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-slate-500 text-sm self-center sm:mt-5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    3 spots left this week
+                                    Join 50+ Top Agents
                                 </div>
                             </div>
                         </div>

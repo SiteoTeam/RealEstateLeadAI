@@ -1,5 +1,14 @@
 node_modules/
 dist/
 .env
-output/*.json
-output/debug/*.json
+.env.*
+*.txt
+*.log
+*.sql
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!vercel.json
+output/
+debug/

@@ -6,14 +6,44 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env.example
+.env.*
 
 # Build
 dist/
 build/
 output/
 
+# Logs & Output
+*.log
+*.txt
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!vercel.json
+!audit_list.json
+
+# Supabase
+supabase/
+.supabase/
+
+# Scripts & Dumps
+*.sql
+*.js
+!eslint.config.js
+!vite.config.ts
+update-logo.js
+
+# One-off dev/debug files
+*_plan_*.md
+scraper_agent_plan_1.md
+debug_*.ts
+debug_*.html
+test_send.ts
+batch_followup.ts
+
 # OS / Editor
 .DS_Store
 .vscode/
 .idea/
-*.log

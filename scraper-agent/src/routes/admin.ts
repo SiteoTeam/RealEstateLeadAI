@@ -586,7 +586,7 @@ router.post('/cron/trial-expiry-reminders', async (req, res) => {
 // Runs full email sequence: step 1 (welcome) to new leads + follow-ups to existing leads
 router.post('/cron/run-batch', async (req, res) => {
     const cronSecret = req.headers['x-cron-secret'] || req.headers['authorization']?.replace('Bearer ', '');
-    const expectedSecret = process.env.CRON_SECRET;
+    const expectedSecret = process.env.CRON_SECRET_GITHUB;
 
     if (!expectedSecret || cronSecret !== expectedSecret) {
         return res.status(401).json({ error: 'Unauthorized' });
