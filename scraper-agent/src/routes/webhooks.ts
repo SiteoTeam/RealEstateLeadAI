@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Webhook } from 'svix';
-import { getDb } from '../services/db';
+import { getDb, markLeadDoNotContact, unsubscribeLead, stopLeadSequence } from '../services/db';
 
 const router = Router();
 
@@ -155,6 +155,25 @@ router.post('/resend', async (req, res) => {
         }
 
         console.log(`[Webhook] DB Update Success. LeadID: ${updatedLog?.lead_id}. Checking trial trigger...`);
+
+        // ── Reputation Protection ────────────────────────────────────────────
+        if (updatedLog?.lead_id) {
+            if (type === 'email.bounced' || type === 'email.suppressed') {
+                console.log(`[Webhook] Hard bounce for lead ${updatedLog.lead_id} — marking do_not_contact`);
+                await markLeadDoNotContact(updatedLog.lead_id);
+            }
+
+            if (type === 'email.complained') {
+                console.log(`[Webhook] Spam complaint for lead ${updatedLog.lead_id} — auto-unsubscribing`);
+                await unsubscribeLead(updatedLog.lead_id);
+                await stopLeadSequence(updatedLog.lead_id);
+            }
+
+            if (type === 'email.clicked') {
+                // They clicked — stop the follow-up sequence, they're engaged
+                await stopLeadSequence(updatedLog.lead_id);
+            }
+        }
 
         // Start Trial on First Click & Send Admin Access Email
         if (type === 'email.clicked' && updatedLog?.lead_id) {

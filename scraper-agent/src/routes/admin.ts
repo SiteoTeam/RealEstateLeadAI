@@ -583,6 +583,7 @@ router.post('/cron/trial-expiry-reminders', async (req, res) => {
 
 // CRON ENDPOINT: POST /api/admin/cron/run-batch
 // Authenticated via CRON_SECRET header
+// Runs full email sequence: step 1 (welcome) to new leads + follow-ups to existing leads
 router.post('/cron/run-batch', async (req, res) => {
     const cronSecret = req.headers['x-cron-secret'] || req.headers['authorization']?.replace('Bearer ', '');
     const expectedSecret = process.env.CRON_SECRET;
@@ -592,50 +593,113 @@ router.post('/cron/run-batch', async (req, res) => {
     }
 
     try {
-        console.log('[Cron] Triggering batch email process...');
-        const { getUncontactedLeads, markLeadAsContacted } = await import('../services/db');
-        const { sendWelcomeEmail } = await import('../services/email');
-
-        // Default to 5 emails per run for cron
-        const batchSize = 5;
-
-        const result = await getUncontactedLeads(batchSize);
-        if (!result.success || !result.data) {
-            return res.json({ success: true, count: 0, message: 'No leads to process' });
+        // ── Send Window: Tue–Thu only (0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat) ──
+        const dayOfWeek = new Date().getUTCDay();
+        if (dayOfWeek < 2 || dayOfWeek > 4) {
+            console.log(`[Cron] Skipping — outside send window (day ${dayOfWeek})`);
+            return res.json({ success: true, skipped: true, reason: 'outside_send_window' });
         }
 
-        const leads = result.data;
-        let sentCount = 0;
+        console.log('[Cron] Running email sequence batch...');
 
-        for (const lead of leads) {
-            // Use centralized URL logic
+        const {
+            getUncontactedLeads,
+            markLeadAsContacted,
+            getLeadsDueForFollowup,
+            advanceLeadSequence,
+        } = await import('../services/db');
+        const { sendWelcomeEmail, sendFollowUpEmail } = await import('../services/email');
+
+        // Daily volume cap: 10 total emails per run (step 1 + follow-ups combined)
+        const DAILY_CAP = 10;
+        const defaultPassword = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
+        const stats = { step1: 0, followups: 0, failed: 0, skipped: 0 };
+
+        // ── Part 1: Follow-ups (higher priority — already in sequence) ──────────
+        const followupResult = await getLeadsDueForFollowup(Math.floor(DAILY_CAP / 2));
+        const followupLeads = followupResult.data || [];
+
+        for (const lead of followupLeads) {
+            if (stats.followups + stats.step1 >= DAILY_CAP) break;
+
+            const step = (lead.email_sequence_step || 1) + 1; // next step
+            if (step > 5) {
+                await advanceLeadSequence(lead.id, step); // marks sequence_stopped
+                stats.skipped++;
+                continue;
+            }
+
             const safeSlug = lead.website_slug || lead.id;
-            // For cron, we want to track source=cron or similar
-            // But let's keep consistent with manual batch for now -> source=email
             const websiteUrl = lead.website_config?.custom_domain
                 ? `https://${lead.website_config.custom_domain}`
                 : `${CLIENT_URL}/w/${safeSlug}?source=email`;
 
-            const adminUrl = `${CLIENT_URL}/w/${safeSlug}/admin/login?source=email`;
-            const defaultPassword = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
-
-            const emailResult = await sendWelcomeEmail({
+            const result = await sendFollowUpEmail({
                 agentName: lead.full_name,
                 agentEmail: lead.primary_email,
                 websiteUrl,
-                adminUrl,
-                defaultPassword,
                 leadId: lead.id,
-                city: lead.city
+                city: lead.city,
+                step,
             });
 
-            if (emailResult.success) {
-                await markLeadAsContacted(lead.id);
-                sentCount++;
+            if (result.success) {
+                await advanceLeadSequence(lead.id, step);
+                stats.followups++;
+                console.log(`[Cron] Follow-up step ${step} sent to ${lead.primary_email}`);
+            } else {
+                stats.failed++;
+                console.error(`[Cron] Follow-up failed for ${lead.primary_email}: ${result.error}`);
+            }
+
+            await new Promise(r => setTimeout(r, 500));
+        }
+
+        // ── Part 2: Step 1 (welcome) to new uncontacted leads ────────────────
+        const remaining = DAILY_CAP - stats.followups - stats.step1;
+        if (remaining > 0) {
+            const newResult = await getUncontactedLeads(remaining);
+            const newLeads = newResult.data || [];
+
+            for (const lead of newLeads) {
+                if (stats.step1 + stats.followups >= DAILY_CAP) break;
+                if (!lead.primary_email || !lead.primary_email.includes('@')) {
+                    stats.skipped++;
+                    continue;
+                }
+
+                const safeSlug = lead.website_slug || lead.id;
+                const websiteUrl = lead.website_config?.custom_domain
+                    ? `https://${lead.website_config.custom_domain}`
+                    : `${CLIENT_URL}/w/${safeSlug}?source=email`;
+
+                const emailResult = await sendWelcomeEmail({
+                    agentName: lead.full_name,
+                    agentEmail: lead.primary_email,
+                    websiteUrl,
+                    adminUrl: `${CLIENT_URL}/w/${safeSlug}/admin/login?source=email`,
+                    defaultPassword,
+                    leadId: lead.id,
+                    city: lead.city,
+                });
+
+                if (emailResult.success) {
+                    // Mark contacted AND advance sequence to step 1 with Day 3 follow-up scheduled
+                    await markLeadAsContacted(lead.id);
+                    await advanceLeadSequence(lead.id, 1);
+                    stats.step1++;
+                    console.log(`[Cron] Step 1 sent to ${lead.primary_email}`);
+                } else {
+                    stats.failed++;
+                    console.error(`[Cron] Step 1 failed for ${lead.primary_email}: ${emailResult.error}`);
+                }
+
+                await new Promise(r => setTimeout(r, 500));
             }
         }
 
-        res.json({ success: true, sent: sentCount });
+        console.log(`[Cron] Done. Stats:`, stats);
+        res.json({ success: true, stats });
 
     } catch (err: any) {
         console.error('[Cron] Batch error:', err);

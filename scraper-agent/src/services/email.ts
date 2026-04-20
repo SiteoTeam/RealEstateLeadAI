@@ -4,6 +4,7 @@ import { getWelcomeEmailHtml } from './templates/welcome';
 import { getPasswordResetEmailHtml, getAdminAccessEmailHtml, getTrialExpiryEmailHtml } from './templates/auth';
 import { getPaymentSuccessEmailHtml } from './templates/payment';
 import { getAuditEmailHtml } from './templates/audit';
+import { getFollowup1Html, getFollowup2Html, getFollowup3Html, getFollowup4Html } from './templates/followup';
 import { CLIENT_URL } from '../utils/urls'; // Ensure this exists or use process.env
 
 // Initialize Resend client safely
@@ -405,6 +406,86 @@ export async function sendAuditEmail(data: AuditEmailData): Promise<{ success: b
 
   } catch (err: any) {
     console.error('[Email] Audit email error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+// Follow-up Sequence Email (steps 2–5)
+const FOLLOWUP_SUBJECTS: Record<number, string> = {
+  2: 'still here',
+  3: 'one thing i noticed',
+  4: 'quick update',
+  5: 'last one from me',
+};
+
+interface FollowUpEmailData {
+  agentName: string;
+  agentEmail: string;
+  websiteUrl: string;
+  leadId?: string;
+  city?: string;
+  step: number; // 2 | 3 | 4 | 5
+}
+
+export async function sendFollowUpEmail(data: FollowUpEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
+  const { agentName, agentEmail, websiteUrl, leadId, city, step } = data;
+
+  if (!resend) return { success: false, error: 'Email service not configured' };
+
+  try {
+    const headers: any = {};
+    const unsubscribeUrl = leadId ? getUnsubscribeUrl(leadId) : undefined;
+
+    if (unsubscribeUrl) {
+      headers['List-Unsubscribe'] = `<${unsubscribeUrl}>`;
+      headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
+    }
+
+    const templateMap: Record<number, () => string> = {
+      2: () => getFollowup1Html(agentName, agentEmail, websiteUrl, unsubscribeUrl, city),
+      3: () => getFollowup2Html(agentName, agentEmail, websiteUrl, unsubscribeUrl, city),
+      4: () => getFollowup3Html(agentName, agentEmail, websiteUrl, unsubscribeUrl, city),
+      5: () => getFollowup4Html(agentName, agentEmail, websiteUrl, unsubscribeUrl),
+    };
+
+    const getHtml = templateMap[step];
+    if (!getHtml) return { success: false, error: `Unknown sequence step: ${step}` };
+
+    const subject = FOLLOWUP_SUBJECTS[step] || 'following up';
+
+    const { data: result, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: agentEmail,
+      replyTo: 'George@siteo.io',
+      subject,
+      html: getHtml(),
+      headers,
+    });
+
+    if (error) throw error;
+
+    // Log to DB
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) {
+        await db.from('email_logs').insert({
+          lead_id: leadId || null,
+          recipient: agentEmail,
+          subject,
+          status: 'sent',
+          resend_id: result?.id,
+          created_at: new Date().toISOString(),
+        });
+      }
+    } catch (logErr) {
+      console.error('[Email] Failed to log follow-up to DB:', logErr);
+    }
+
+    return { success: true, id: result?.id };
+
+  } catch (err: any) {
+    console.error(`[Email] Follow-up step ${step} error:`, err);
     return { success: false, error: err.message };
   }
 }

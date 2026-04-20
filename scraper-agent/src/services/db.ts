@@ -643,3 +643,98 @@ export async function logLoginAttempt(data: {
         console.error('[DB] Failed to log login attempt:', err);
     }
 }
+
+// ─── Email Sequence Helpers ───────────────────────────────────────────────────
+
+/** Fetch leads whose follow-up is due and sequence is still active */
+export async function getLeadsDueForFollowup(limit: number = 10): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        const { data, error } = await client
+            .from('scraped_agents')
+            .select('*')
+            .lte('next_followup_at', new Date().toISOString())
+            .eq('sequence_stopped', false)
+            .eq('do_not_contact', false)
+            .eq('is_unsubscribed', false)
+            .not('next_followup_at', 'is', null)
+            .order('next_followup_at', { ascending: true })
+            .limit(limit);
+
+        if (error) throw error;
+        return { success: true, data: data || [] };
+    } catch (err) {
+        console.error('[DB] Error fetching follow-up leads:', err);
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+}
+
+const FOLLOWUP_DELAYS_DAYS = [0, 3, 7, 14, 21]; // step index → days after step 0
+
+/** Advance lead to next sequence step and set next send time */
+export async function advanceLeadSequence(id: string, nextStep: number): Promise<{ success: boolean; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    const isLast = nextStep >= FOLLOWUP_DELAYS_DAYS.length;
+    const daysUntilNext = !isLast ? FOLLOWUP_DELAYS_DAYS[nextStep] - FOLLOWUP_DELAYS_DAYS[nextStep - 1] : 0;
+    const nextFollowupAt = !isLast
+        ? new Date(Date.now() + daysUntilNext * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
+    try {
+        const { error } = await client
+            .from('scraped_agents')
+            .update({
+                email_sequence_step: nextStep,
+                next_followup_at: nextFollowupAt,
+                sequence_stopped: isLast, // stop after final step
+                last_contacted_at: new Date().toISOString(),
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (err) {
+        console.error('[DB] Error advancing sequence:', err);
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+}
+
+/** Stop sequence for a lead (clicked, complained, bounced, manual) */
+export async function stopLeadSequence(id: string): Promise<{ success: boolean; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        const { error } = await client
+            .from('scraped_agents')
+            .update({ sequence_stopped: true, next_followup_at: null })
+            .eq('id', id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+}
+
+/** Mark lead as do-not-contact (hard bounce) */
+export async function markLeadDoNotContact(id: string): Promise<{ success: boolean; error?: string }> {
+    const client = getSupabaseClient();
+    if (!client) return { success: false, error: 'Database not configured' };
+
+    try {
+        const { error } = await client
+            .from('scraped_agents')
+            .update({ do_not_contact: true, sequence_stopped: true, next_followup_at: null })
+            .eq('id', id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+}
