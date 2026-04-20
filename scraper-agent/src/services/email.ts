@@ -32,7 +32,7 @@ interface ContactFormData {
 
 export async function sendContactEmail(data: ContactFormData): Promise<{ success: boolean; error?: string; id?: string }> {
   // ... existing implementation (Transaction email, maybe no unsubscribe needed) ...
-  const { visitorName, visitorEmail, visitorPhone, message, agentName, agentEmail } = data;
+  const { visitorName, visitorEmail, visitorPhone, message, agentEmail } = data;
 
   try {
     if (!resend) {
@@ -131,7 +131,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
     const { data: result, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: agentEmail,
-      replyTo: 'siteoteam@gmail.com', // Ensure replies don't bounce
+      replyTo: 'George@siteo.io',
       subject: `your listings`,
       html: htmlContent,
       headers: headers
@@ -349,10 +349,11 @@ interface AuditEmailData {
   agentEmail: string;
   auditUrl: string;
   leadId?: string;
+  city?: string;
 }
 
 export async function sendAuditEmail(data: AuditEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
-  const { agentName, agentEmail, auditUrl, leadId } = data;
+  const { agentName, agentEmail, auditUrl, leadId, city } = data;
 
   try {
     if (!resend) {
@@ -362,23 +363,20 @@ export async function sendAuditEmail(data: AuditEmailData): Promise<{ success: b
     console.log(`[Email] Sending audit report link to ${agentEmail}`);
 
     const headers: any = {};
-    let htmlContent = getAuditEmailHtml(agentName, agentEmail, auditUrl);
+    let htmlContent = getAuditEmailHtml(agentName, agentEmail, auditUrl, undefined, city);
 
     if (leadId) {
       const unsubscribeUrl = getUnsubscribeUrl(leadId);
       headers['List-Unsubscribe'] = `<${unsubscribeUrl}>`;
       headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
-
-      // Pass unsubscribe link to template
-      // @ts-ignore
-      htmlContent = getAuditEmailHtml(agentName, agentEmail, auditUrl, unsubscribeUrl);
+      htmlContent = getAuditEmailHtml(agentName, agentEmail, auditUrl, unsubscribeUrl, city);
     }
 
     const { data: result, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: agentEmail,
-      replyTo: 'siteoteam@gmail.com',
-      subject: `Website Report for ${agentName}`,
+      replyTo: 'George@siteo.io',
+      subject: `your online presence`,
       html: htmlContent,
       headers: headers
     });
@@ -393,7 +391,7 @@ export async function sendAuditEmail(data: AuditEmailData): Promise<{ success: b
         await db.from('email_logs').insert({
           lead_id: leadId || null,
           recipient: agentEmail,
-          subject: `Website Report for ${agentName}`,
+          subject: `your online presence`,
           status: 'sent',
           resend_id: result?.id,
           created_at: new Date().toISOString()

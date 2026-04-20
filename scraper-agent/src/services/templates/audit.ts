@@ -1,97 +1,126 @@
 
+const GEORGE_HEADSHOT = 'https://jqtrgdmjosegilmbxino.supabase.co/storage/v1/object/public/agent-assets/george-headshot.png';
+
 export const getAuditEmailHtml = (
   agentName: string,
   agentEmail: string,
   auditUrl: string,
-  unsubscribeUrl?: string
-) => `
-<!DOCTYPE html>
+  unsubscribeUrl?: string,
+  city?: string
+) => {
+  const firstName = agentName.split(' ')[0];
+  const cityLine = city && city !== 'Unknown'
+    ? `I ran an analysis on your digital presence in ${city} to see how you stack up against top agents in your market.`
+    : `I ran an analysis on your digital presence to see how you stack up against top agents in your market.`;
+
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
 </head>
-<body style="margin:0; padding:0; background-color:#f8fafc; font-family: 'Inter', Helvetica, Arial, sans-serif;">
+<body style="margin:0; padding:0; background-color:#f8fafc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
 
-  <div style="max-width:600px; margin:40px auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border: 1px solid #e2e8f0;">
+  <!-- Hidden preview text -->
+  <span style="display:none; max-height:0; overflow:hidden; mso-hide:all;">I found 3 areas where you might be losing leads to other agents — here's the full breakdown.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
+
+  <div style="max-width:600px; margin:40px auto; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.05);">
+
+    <!-- Header with Logo -->
+    <div style="background-color:#ffffff; padding: 32px; text-align:center; border-bottom: 1px solid #f1f5f9;">
+      <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 32px; font-weight: 500; color: #0f172a; letter-spacing: -1px;">
+        Site<span style="color: #6366f1;">o</span>
+      </div>
+    </div>
 
     <div style="padding: 40px 32px;">
+
       <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:24px;">
-        Hi ${agentName.split(' ')[0]},
+        Hi ${firstName},
       </p>
 
       <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:24px;">
-        We analyzed your digital footprint to see how you compare to top agents in your market.
+        ${cityLine}
       </p>
 
       <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:32px;">
-        We found <strong>3 key areas</strong> where you might be losing potential leads.
+        I found <strong>3 key areas</strong> where you might be losing potential leads — here's the full breakdown.
       </p>
 
       <div style="background-color:#f1f5f9; padding:24px; border-radius:8px; text-align:center; margin-bottom:32px;">
         <p style="margin:0 0 16px 0; font-size:14px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
           YOUR ANALYSIS IS READY
         </p>
-        <a href="${auditUrl}" style="display:inline-block; background-color:#1e293b; color:#ffffff; font-size:16px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:6px;">
+        <a href="${auditUrl}" style="display:inline-block; background-color:#4f46e5; color:#ffffff; font-size:16px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:6px;">
           View Full Report
         </a>
       </div>
 
-      <p style="font-size:14px; color:#64748b; line-height:1.6; margin-bottom:24px;">
+      <p style="font-size:14px; color:#64748b; line-height:1.6; margin-bottom:32px;">
         This link is private and will expire in 7 days.
       </p>
 
-      <div style="border-top:1px solid #e2e8f0; padding-top:20px;">
-        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 4px 0;">
-          <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
-        </p>
-        <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
-          <a href="tel:+16268849546" style="color:#4f46e5; text-decoration:none;">(626) 884-9546</a>
-        </p>
-      </div>
-    </div>
-
-    <div style="background-color:#f8fafc; padding:20px 32px; text-align:center; border-top:1px solid #e2e8f0;">
-      <p style="margin:0 0 16px 0; color:#94a3b8; font-size:10px; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">
-        Trusted by top producing agents at
-      </p>
-      
-      <!-- Logos Grid -->
-      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 auto; max-width:400px;">
+      <!-- Signature -->
+      <table cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;">
         <tr>
-          <!-- KW -->
-          <td align="center" style="padding:0 10px;">
-             <!-- Keller Williams (Path) -->
-             <svg width="40" height="12" viewBox="0 0 100 30" xmlns="http://www.w3.org/2000/svg" style="display:block; fill:#64748b;">
-                <path d="M10,0 L0,0 L0,30 L10,30 L10,18 L18,30 L30,30 L18,12 L28,0 L18,0 L10,10 L10,0 Z M45,0 L35,0 L42,30 L52,30 L55,15 L58,30 L68,30 L75,0 L65,0 L62,18 L58,0 L52,0 L48,18 L45,0 Z" />
-             </svg>
+          <td style="padding-right:14px; vertical-align:middle;">
+            <img src="${GEORGE_HEADSHOT}" alt="George" width="56" height="56" style="width:56px; height:56px; border-radius:50%; object-fit:cover; display:block;" />
           </td>
-          <!-- RE/MAX -->
-          <td align="center" style="padding:0 10px;">
-             <svg width="48" height="12" viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg" style="display:block; fill:#64748b;">
-                <text x="0" y="24" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="24">RE/MAX</text>
-             </svg>
-          </td>
-          <!-- CB -->
-          <td align="center" style="padding:0 10px;">
-             <svg width="60" height="12" viewBox="0 0 280 30" xmlns="http://www.w3.org/2000/svg" style="display:block; fill:#64748b;">
-                 <rect x="0" y="0" width="30" height="30" rx="0" />
-                 <text x="5" y="21" fill="white" fontFamily="serif" fontWeight="bold" fontSize="18">CB</text>
-                 <text x="38" y="21" fontFamily="serif" fontWeight="normal" fontSize="16">COLDWELL BANKER</text>
-             </svg>
-          </td>
-           <!-- eXp -->
-          <td align="center" style="padding:0 10px;">
-             <svg width="32" height="12" viewBox="0 0 80 30" xmlns="http://www.w3.org/2000/svg" style="display:block; fill:#64748b;">
-                 <text x="0" y="22" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="24" fontStyle="italic">eXp</text>
-                 <path d="M50,5 L70,5 L60,25 Z" fill="#F37321" opacity="0.8" />
-             </svg>
+          <td style="vertical-align:middle;">
+            <p style="margin:0; font-size:15px; font-weight:600; color:#0f172a; line-height:1.4;">George</p>
+            <p style="margin:0; font-size:13px; color:#6366f1; line-height:1.4;">Siteo</p>
+            <p style="margin:4px 0 0; font-size:13px; color:#64748b; line-height:1.4;">
+              <a href="mailto:george@siteo.io" style="color:#64748b; text-decoration:none;">george@siteo.io</a>
+              &nbsp;·&nbsp;
+              <a href="tel:+16268849546" style="color:#64748b; text-decoration:none;">(626) 884-9546</a>
+            </p>
+            <p style="margin:6px 0 0; font-size:13px; line-height:1.4;">
+              <a href="https://calendly.com/siteoteam/30min" style="color:#4f46e5; text-decoration:none; font-weight:600;">📅 Book a call</a>
+              &nbsp;&nbsp;
+              <a href="https://www.instagram.com/web.dev.george/" style="color:#64748b; text-decoration:none;">Instagram</a>
+            </p>
           </td>
         </tr>
       </table>
 
-      <p style="margin:24px 0 0 0; color:#94a3b8; font-size:12px;">
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color:#f8fafc; padding:20px 32px; text-align:center; border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 16px 0; color:#94a3b8; font-size:10px; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">
+        Trusted by top producing agents at
+      </p>
+
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 auto; max-width:400px;">
+        <tr>
+          <td align="center" style="padding:0 10px;">
+            <svg width="40" height="12" viewBox="0 0 100 30" xmlns="http://www.w3.org/2000/svg" style="display:block; fill:#64748b;">
+              <path d="M10,0 L0,0 L0,30 L10,30 L10,18 L18,30 L30,30 L18,12 L28,0 L18,0 L10,10 L10,0 Z M45,0 L35,0 L42,30 L52,30 L55,15 L58,30 L68,30 L75,0 L65,0 L62,18 L58,0 L52,0 L48,18 L45,0 Z" />
+            </svg>
+          </td>
+          <td align="center" style="padding:0 10px;">
+            <svg width="48" height="12" viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg" style="display:block; fill:#64748b;">
+              <text x="0" y="24" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="24">RE/MAX</text>
+            </svg>
+          </td>
+          <td align="center" style="padding:0 10px;">
+            <svg width="60" height="12" viewBox="0 0 280 30" xmlns="http://www.w3.org/2000/svg" style="display:block; fill:#64748b;">
+              <rect x="0" y="0" width="30" height="30" rx="0" />
+              <text x="5" y="21" fill="white" fontFamily="serif" fontWeight="bold" fontSize="18">CB</text>
+              <text x="38" y="21" fontFamily="serif" fontWeight="normal" fontSize="16">COLDWELL BANKER</text>
+            </svg>
+          </td>
+          <td align="center" style="padding:0 10px;">
+            <svg width="32" height="12" viewBox="0 0 80 30" xmlns="http://www.w3.org/2000/svg" style="display:block; fill:#64748b;">
+              <text x="0" y="22" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="24" fontStyle="italic">eXp</text>
+              <path d="M50,5 L70,5 L60,25 Z" fill="#F37321" opacity="0.8" />
+            </svg>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin:24px 0 0 0; color:#94a3b8; font-size:11px;">
         Sent to ${agentEmail}
         ${unsubscribeUrl ? `
         <br/><br/>
@@ -103,5 +132,5 @@ export const getAuditEmailHtml = (
   </div>
 
 </body>
-</html>
-`;
+</html>`;
+};
