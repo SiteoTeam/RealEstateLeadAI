@@ -259,7 +259,8 @@ router.post('/notify-agent/:id', verifySupabaseUser, async (req, res) => {
             websiteUrl,
             adminUrl,
             defaultPassword,
-            leadId: agent.id // Critical for webhook tracking
+            leadId: agent.id, // Critical for webhook tracking
+            city: agent.city
         });
 
         if (!result.success) {
@@ -388,7 +389,8 @@ router.post('/trigger-batch', verifySupabaseUser, async (req, res) => {
                 websiteUrl: `${CLIENT_URL}/w/${safeSlug}?source=email`,
                 adminUrl: `${CLIENT_URL}/w/${safeSlug}/admin/login?source=email`,
                 defaultPassword: process.env.DEFAULT_AGENT_PASSWORD || 'welcome123',
-                leadId: lead.id
+                leadId: lead.id,
+                city: lead.city
             };
 
             const sendResult = await sendWelcomeEmail(emailData);
@@ -623,7 +625,8 @@ router.post('/cron/run-batch', async (req, res) => {
                 websiteUrl,
                 adminUrl,
                 defaultPassword,
-                leadId: lead.id
+                leadId: lead.id,
+                city: lead.city
             });
 
             if (emailResult.success) {

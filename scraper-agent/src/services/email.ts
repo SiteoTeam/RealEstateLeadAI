@@ -104,10 +104,11 @@ interface WelcomeEmailData {
   adminUrl: string; // Kept for interface compatibility but not always used in template
   defaultPassword: string; // Kept for interface compatibility
   leadId?: string; // Made optional but we really need it for Unsubscribe
+  city?: string; // Used for personalization in email body
 }
 
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
-  const { agentName, agentEmail, websiteUrl, leadId } = data;
+  const { agentName, agentEmail, websiteUrl, leadId, city } = data;
 
   try {
     // Start with a strict check
@@ -117,34 +118,21 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
     }
 
     const headers: any = {};
-    let htmlContent = getWelcomeEmailHtml(agentName, agentEmail, websiteUrl);
+    let htmlContent = getWelcomeEmailHtml(agentName, agentEmail, websiteUrl, undefined, city);
 
     // Add Unsubscribe if leadId exists
     if (leadId) {
       const unsubscribeUrl = getUnsubscribeUrl(leadId);
       headers['List-Unsubscribe'] = `<${unsubscribeUrl}>`;
       headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
-
-      // Inject Unsubscribe Link into HTML (Modify getWelcomeEmailHtml to accept it or append it)
-      // Since we can't easily modify the template signature without breaking other calls, 
-      // let's pass it as a 4th argument if possible, or append it here.
-      // Actually, let's update the template signature next. For now, simple append? 
-      // No, best to update template logic.
-      // I will update the template function signature in a separate step.
-      // For now, I'll pass it if I can, or just rely on the header? 
-      // User asked for "Add the unsubscribe lmk".
-
-      // I'll update the `getWelcomeEmailHtml` call signature in the template file.
-      // Here I will assume I will update it to accept `unsubscribeUrl`.
-      // @ts-ignore - Temporary until template updated
-      htmlContent = getWelcomeEmailHtml(agentName, agentEmail, websiteUrl, unsubscribeUrl);
+      htmlContent = getWelcomeEmailHtml(agentName, agentEmail, websiteUrl, unsubscribeUrl, city);
     }
 
     const { data: result, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: agentEmail,
       replyTo: 'siteoteam@gmail.com', // Ensure replies don't bounce
-      subject: `Your agent profile on Google`, // Less "spammy" / bait-like
+      subject: `your listings`,
       html: htmlContent,
       headers: headers
     });
