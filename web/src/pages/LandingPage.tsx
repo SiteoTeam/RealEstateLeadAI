@@ -1042,8 +1042,8 @@ export function LandingPage() {
                             <a href="mailto:siteoteam@gmail.com" className="hover:text-indigo-400 transition-colors duration-200">
                                 siteoteam@gmail.com
                             </a>
-                            <a href="tel:+13234437252" className="hover:text-indigo-400 transition-colors duration-200">
-                                (323) 443-7252
+                            <a href="tel:+16268849546" className="hover:text-indigo-400 transition-colors duration-200">
+                                (626) 884-9546
                             </a>
                         </div>
                     </div>

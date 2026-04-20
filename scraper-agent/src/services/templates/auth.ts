@@ -48,7 +48,7 @@ export const getPasswordResetEmailHtml = (
           <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
         </p>
         <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
-          <a href="tel:+13234437252" style="color:#4f46e5; text-decoration:none;">(323) 443-7252</a>
+          <a href="tel:+16268849546" style="color:#4f46e5; text-decoration:none;">(626) 884-9546</a>
         </p>
       </div>
     </div>
@@ -136,7 +136,7 @@ export const getAdminAccessEmailHtml = (
           <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
         </p>
         <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
-          <a href="tel:+13234437252" style="color:#4f46e5; text-decoration:none;">(323) 443-7252</a>
+          <a href="tel:+16268849546" style="color:#4f46e5; text-decoration:none;">(626) 884-9546</a>
         </p>
       </div>
     </div>
@@ -219,7 +219,7 @@ export const getTrialExpiryEmailHtml = (
           <a href="mailto:siteoteam@gmail.com" style="color:#4f46e5; text-decoration:none;">siteoteam@gmail.com</a>
         </p>
         <p style="font-size:14px; color:#64748b; line-height:1.6; margin:0;">
-          <a href="tel:+13234437252" style="color:#4f46e5; text-decoration:none;">(323) 443-7252</a>
+          <a href="tel:+16268849546" style="color:#4f46e5; text-decoration:none;">(626) 884-9546</a>
         </p>
       </div>
     </div>

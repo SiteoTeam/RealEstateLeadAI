@@ -45,7 +45,7 @@ export const getPaymentSuccessEmailHtml = ({
                 <a href="mailto:siteoteam@gmail.com" style="color: #4f46e5; text-decoration: none;">siteoteam@gmail.com</a>
             </p>
             <p style="margin: 0; font-size: 14px;">
-                <a href="tel:+13234437252" style="color: #4f46e5; text-decoration: none;">(323) 443-7252</a>
+                <a href="tel:+16268849546" style="color: #4f46e5; text-decoration: none;">(626) 884-9546</a>
             </p>
         </div>
     </div>

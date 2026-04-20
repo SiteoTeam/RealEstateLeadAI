@@ -89,7 +89,7 @@ export function PrivacyPolicy() {
                             <br /><br />
                             <strong>Email:</strong> siteoteam@gmail.com
                             <br />
-                            <strong>Phone:</strong> (323) 443-7252
+                            <strong>Phone:</strong> (626) 884-9546
                         </p>
                     </section>
                 </div>
