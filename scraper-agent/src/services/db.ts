@@ -428,7 +428,7 @@ export async function unsubscribeLead(id: string): Promise<{ success: boolean; e
     try {
         const { error } = await client
             .from('scraped_agents')
-            .update({ is_unsubscribed: true, updated_at: new Date().toISOString() })
+            .update({ do_not_contact: true, sequence_stopped: true, updated_at: new Date().toISOString() })
             .eq('id', id);
 
         if (error) throw error;
@@ -658,7 +658,6 @@ export async function getLeadsDueForFollowup(limit: number = 10): Promise<{ succ
             .lte('next_followup_at', new Date().toISOString())
             .eq('sequence_stopped', false)
             .eq('do_not_contact', false)
-            .eq('is_unsubscribed', false)
             .not('next_followup_at', 'is', null)
             .order('next_followup_at', { ascending: true })
             .limit(limit);
