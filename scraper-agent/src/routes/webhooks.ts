@@ -109,20 +109,32 @@ router.post('/resend', async (req, res) => {
 
                 if (lead && !lead.trial_started_at) {
                     console.log(`[Webhook] First click for ${lead.full_name}. Starting trial...`);
-                    await db.from('scraped_agents')
+                    const { data: claimed } = await db.from('scraped_agents')
                         .update({ trial_started_at: new Date().toISOString() })
-                        .eq('id', currentLog.lead_id);
+                        .eq('id', currentLog.lead_id)
+                        .is('trial_started_at', null)
+                        .select('id');
 
-                    if (lead.primary_email && lead.website_slug) {
-                        const { sendAdminAccessEmail } = await import('../services/email');
+                    if (claimed && claimed.length > 0 && lead.primary_email && lead.website_slug) {
+                        const { sendAdminAccessEmail, sendOnboarding1Email } = await import('../services/email');
                         const CLIENT_URL = process.env.CLIENT_URL || 'https://siteo.io';
                         const DEFAULT_PASSWORD = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
+                        const adminUrl = `${CLIENT_URL}/w/${lead.website_slug}/admin?source=email`;
                         await sendAdminAccessEmail({
                             agentName: lead.full_name,
                             agentEmail: lead.primary_email,
-                            adminUrl: `${CLIENT_URL}/w/${lead.website_slug}/admin?source=email`,
+                            adminUrl,
+                            defaultPassword: DEFAULT_PASSWORD,
+                            leadId: lead.id
+                        });
+                        await sendOnboarding1Email({
+                            agentName: lead.full_name,
+                            agentEmail: lead.primary_email,
+                            adminUrl,
+                            leadId: lead.id,
                             defaultPassword: DEFAULT_PASSWORD
                         });
+                        await stopLeadSequence(currentLog.lead_id);
                     }
                 }
             }
@@ -190,14 +202,21 @@ router.post('/resend', async (req, res) => {
             if (lead && !lead.trial_started_at) {
                 console.log(`[Webhook] First click for ${lead.full_name}. Starting trial and sending admin access email...`);
 
-                // Start trial
-                const { error: trialError } = await db
+                // Start trial (atomic: only if not already started — prevents duplicate sends on retry)
+                const { data: claimed, error: trialError } = await db
                     .from('scraped_agents')
                     .update({ trial_started_at: new Date().toISOString() })
-                    .eq('id', updatedLog.lead_id);
+                    .eq('id', updatedLog.lead_id)
+                    .is('trial_started_at', null)
+                    .select('id');
 
                 if (trialError) {
                     console.error('[Webhook] Failed to start trial:', trialError);
+                }
+
+                if (!claimed || claimed.length === 0) {
+                    console.log('[Webhook] Trial already claimed by concurrent request. Skipping email sends.');
+                    return res.json({ success: true });
                 }
 
                 // Send admin access email + Day 0 onboarding email

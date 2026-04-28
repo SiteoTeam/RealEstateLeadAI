@@ -314,6 +314,22 @@ export async function sendTrialExpiryReminderEmail(data: TrialExpiryEmailData): 
 
     if (error) throw error;
 
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) {
+        await db.from('email_logs').insert({
+          recipient: agentEmail,
+          subject: `${daysLeft} days left to keep your site active`,
+          status: 'sent',
+          resend_id: result?.id,
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (logErr) {
+      console.error('[Email] Failed to log trial expiry to DB:', logErr);
+    }
+
     return { success: true, id: result?.id };
 
   } catch (err: any) {
@@ -336,6 +352,22 @@ export async function sendPaymentSuccessEmail({ agentName, agentEmail, amount, d
     if (error) {
       console.error('[Email] Failed to send payment success email:', error);
       return { success: false, error };
+    }
+
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) {
+        await db.from('email_logs').insert({
+          recipient: agentEmail,
+          subject: 'Payment Successful - Siteo Receipt',
+          status: 'sent',
+          resend_id: data?.id,
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (logErr) {
+      console.error('[Email] Failed to log payment success to DB:', logErr);
     }
 
     return { success: true, id: data?.id };
