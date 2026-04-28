@@ -609,7 +609,8 @@ router.post('/cron/run-batch', async (req, res) => {
         const stats = { step1: 0, followups: 0, failed: 0, skipped: 0 };
 
         // ── Part 1: Follow-ups (higher priority — already in sequence) ──────────
-        const followupResult = await getLeadsDueForFollowup(Math.floor(DAILY_CAP / 2));
+        // Give follow-ups the full cap — they take priority. New welcomes fill remaining slots.
+        const followupResult = await getLeadsDueForFollowup(DAILY_CAP);
         const followupLeads = followupResult.data || [];
 
         for (const lead of followupLeads) {
