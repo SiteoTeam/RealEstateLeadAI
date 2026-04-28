@@ -222,11 +222,12 @@ interface AdminAccessEmailData {
   agentEmail: string;
   adminUrl: string;
   defaultPassword: string;
+  leadId?: string;
 }
 
 export async function sendAdminAccessEmail(data: AdminAccessEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
   // Transactional/Welcome - usually no unsubscribe needed for access creds
-  const { agentName, agentEmail, adminUrl, defaultPassword } = data;
+  const { agentName, agentEmail, adminUrl, defaultPassword, leadId } = data;
 
   try {
     if (!resend) {
@@ -249,10 +250,8 @@ export async function sendAdminAccessEmail(data: AdminAccessEmailData): Promise<
       const { getDb } = await import('./db');
       const db = getDb();
       if (db) {
-        const { data: leads } = await db.from('agent_leads').select('id').eq('primary_email', agentEmail).single();
-
         await db.from('email_logs').insert({
-          lead_id: leads?.id || null,
+          lead_id: leadId || null,
           recipient: agentEmail,
           subject: 'Admin access to your website',
           status: 'sent',
@@ -274,6 +273,7 @@ export async function sendAdminAccessEmail(data: AdminAccessEmailData): Promise<
       const db = getDb();
       if (db) {
         await db.from('email_logs').insert({
+          lead_id: leadId || null,
           recipient: agentEmail,
           subject: 'Admin access to your website',
           status: 'failed',

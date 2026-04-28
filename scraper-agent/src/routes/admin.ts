@@ -864,8 +864,7 @@ router.post('/cron/onboarding-emails', async (req, res) => {
             .gte('trial_started_at', day2Start.toISOString())
             .lte('trial_started_at', day2End.toISOString())
             .eq('is_paid', false)
-            .eq('do_not_contact', false)
-            .eq('is_unsubscribed', false);
+            .eq('do_not_contact', false);
 
         for (const lead of day2Leads || []) {
             if (!lead.primary_email || !lead.website_slug) continue;
@@ -887,8 +886,7 @@ router.post('/cron/onboarding-emails', async (req, res) => {
             .gte('trial_started_at', day5Start.toISOString())
             .lte('trial_started_at', day5End.toISOString())
             .eq('is_paid', false)
-            .eq('do_not_contact', false)
-            .eq('is_unsubscribed', false);
+            .eq('do_not_contact', false);
 
         for (const lead of day5Leads || []) {
             if (!lead.primary_email || !lead.website_slug) continue;

@@ -211,7 +211,8 @@ router.post('/resend', async (req, res) => {
                         agentName: lead.full_name,
                         agentEmail: lead.primary_email,
                         adminUrl,
-                        defaultPassword: DEFAULT_PASSWORD
+                        defaultPassword: DEFAULT_PASSWORD,
+                        leadId: lead.id
                     });
 
                     if (result.success) {

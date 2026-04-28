@@ -689,8 +689,9 @@ export async function advanceLeadSequence(id: string, nextStep: number): Promise
             .update({
                 email_sequence_step: nextStep,
                 next_followup_at: nextFollowupAt,
-                sequence_stopped: isLast, // stop after final step
+                sequence_stopped: isLast,
                 last_contacted_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
             })
             .eq('id', id);
 
