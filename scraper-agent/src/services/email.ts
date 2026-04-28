@@ -5,6 +5,7 @@ import { getPasswordResetEmailHtml, getAdminAccessEmailHtml, getTrialExpiryEmail
 import { getPaymentSuccessEmailHtml } from './templates/payment';
 import { getAuditEmailHtml } from './templates/audit';
 import { getFollowup1Html, getFollowup2Html, getFollowup3Html, getFollowup4Html } from './templates/followup';
+import { getOnboarding1Html, getOnboarding2Html, getOnboarding3Html } from './templates/onboarding';
 import { CLIENT_URL } from '../utils/urls'; // Ensure this exists or use process.env
 
 // Initialize Resend client safely
@@ -486,6 +487,96 @@ export async function sendFollowUpEmail(data: FollowUpEmailData): Promise<{ succ
 
   } catch (err: any) {
     console.error(`[Email] Follow-up step ${step} error:`, err);
+    return { success: false, error: err.message };
+  }
+}
+
+// Onboarding Sequence Emails (post-trial-start: Day 0, Day 2, Day 5)
+interface OnboardingEmailData {
+  agentName: string;
+  agentEmail: string;
+  adminUrl: string;
+  leadId?: string;
+  defaultPassword?: string;
+}
+
+export async function sendOnboarding1Email(data: OnboardingEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
+  const { agentName, agentEmail, adminUrl, leadId, defaultPassword = 'welcome123' } = data;
+  if (!resend) return { success: false, error: 'Email service not configured' };
+
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: agentEmail,
+      replyTo: 'george@siteo.io',
+      subject: 'your admin access',
+      html: getOnboarding1Html(agentName, agentEmail, adminUrl, defaultPassword),
+    });
+    if (error) throw error;
+
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) await db.from('email_logs').insert({ lead_id: leadId || null, recipient: agentEmail, subject: 'onboarding-day-0', status: 'sent', resend_id: result?.id, created_at: new Date().toISOString() });
+    } catch (_) {}
+
+    return { success: true, id: result?.id };
+  } catch (err: any) {
+    console.error('[Email] Onboarding day-0 error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function sendOnboarding2Email(data: OnboardingEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
+  const { agentName, agentEmail, adminUrl, leadId } = data;
+  if (!resend) return { success: false, error: 'Email service not configured' };
+
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: agentEmail,
+      replyTo: 'george@siteo.io',
+      subject: 'one thing to check',
+      html: getOnboarding2Html(agentName, agentEmail, adminUrl),
+    });
+    if (error) throw error;
+
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) await db.from('email_logs').insert({ lead_id: leadId || null, recipient: agentEmail, subject: 'onboarding-day-2', status: 'sent', resend_id: result?.id, created_at: new Date().toISOString() });
+    } catch (_) {}
+
+    return { success: true, id: result?.id };
+  } catch (err: any) {
+    console.error('[Email] Onboarding day-2 error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function sendOnboarding3Email(data: OnboardingEmailData): Promise<{ success: boolean; error?: string; id?: string }> {
+  const { agentName, agentEmail, adminUrl, leadId } = data;
+  if (!resend) return { success: false, error: 'Email service not configured' };
+
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: agentEmail,
+      replyTo: 'george@siteo.io',
+      subject: 'did you see this feature',
+      html: getOnboarding3Html(agentName, agentEmail, adminUrl),
+    });
+    if (error) throw error;
+
+    try {
+      const { getDb } = await import('./db');
+      const db = getDb();
+      if (db) await db.from('email_logs').insert({ lead_id: leadId || null, recipient: agentEmail, subject: 'onboarding-day-5', status: 'sent', resend_id: result?.id, created_at: new Date().toISOString() });
+    } catch (_) {}
+
+    return { success: true, id: result?.id };
+  } catch (err: any) {
+    console.error('[Email] Onboarding day-5 error:', err);
     return { success: false, error: err.message };
   }
 }

@@ -200,16 +200,17 @@ router.post('/resend', async (req, res) => {
                     console.error('[Webhook] Failed to start trial:', trialError);
                 }
 
-                // Send admin access email
+                // Send admin access email + Day 0 onboarding email
                 if (lead.primary_email && lead.website_slug) {
-                    const { sendAdminAccessEmail } = await import('../services/email');
+                    const { sendAdminAccessEmail, sendOnboarding1Email } = await import('../services/email');
                     const CLIENT_URL = process.env.CLIENT_URL || 'https://siteo.io';
                     const DEFAULT_PASSWORD = process.env.DEFAULT_AGENT_PASSWORD || 'welcome123';
+                    const adminUrl = `${CLIENT_URL}/w/${lead.website_slug}/admin?source=email`;
 
                     const result = await sendAdminAccessEmail({
                         agentName: lead.full_name,
                         agentEmail: lead.primary_email,
-                        adminUrl: `${CLIENT_URL}/w/${lead.website_slug}/admin?source=email`,
+                        adminUrl,
                         defaultPassword: DEFAULT_PASSWORD
                     });
 
@@ -217,6 +218,20 @@ router.post('/resend', async (req, res) => {
                         console.log(`[Webhook] Admin access email sent to ${lead.primary_email}`);
                     } else {
                         console.error('[Webhook] Failed to send admin access email:', result.error);
+                    }
+
+                    // Send Day 0 onboarding email (getting-started guide)
+                    const onboardingResult = await sendOnboarding1Email({
+                        agentName: lead.full_name,
+                        agentEmail: lead.primary_email,
+                        adminUrl,
+                        leadId: lead.id,
+                        defaultPassword: DEFAULT_PASSWORD
+                    });
+                    if (onboardingResult.success) {
+                        console.log(`[Webhook] Onboarding day-0 email sent to ${lead.primary_email}`);
+                    } else {
+                        console.error('[Webhook] Failed to send onboarding day-0 email:', onboardingResult.error);
                     }
                 }
             } else {

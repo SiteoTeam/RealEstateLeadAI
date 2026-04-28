@@ -17,3 +17,12 @@ jobs:
             --max-time 60 \
             --retry 2 \
             --retry-delay 10
+
+      - name: Trigger onboarding emails
+        run: |
+          curl -X POST https://realestateleadai.onrender.com/api/admin/cron/onboarding-emails \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET_GITHUB }}" \
+            -H "Content-Type: application/json" \
+            --max-time 60 \
+            --retry 2 \
+            --retry-delay 10

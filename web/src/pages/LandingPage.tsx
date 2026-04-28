@@ -455,6 +455,9 @@ function IntakeFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         }
         setSubmitting(false)
         setSubmitted(true)
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'form_submit', { form_name: 'intake' });
+        }
     }
 
     if (!isOpen) return null
@@ -756,7 +759,7 @@ export function LandingPage() {
                             <div className="mt-7 md:mt-10 flex flex-col sm:flex-row items-start gap-5 transition-all duration-1000 delay-700"
                                 style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(20px)' }}>
                                 <div className="flex flex-col gap-2">
-                                    <div onClick={() => setShowIntakeForm(true)}>
+                                    <div onClick={() => { setShowIntakeForm(true); if (typeof window !== 'undefined' && (window as any).gtag) (window as any).gtag('event', 'cta_click', { location: 'hero' }); }}>
                                         <MagneticButton>
                                             Build My Free Site
                                         </MagneticButton>
@@ -1002,7 +1005,7 @@ export function LandingPage() {
 
                                 {/* Form trigger button */}
                                 <button
-                                    onClick={() => setShowIntakeForm(true)}
+                                    onClick={() => { setShowIntakeForm(true); if (typeof window !== 'undefined' && (window as any).gtag) (window as any).gtag('event', 'cta_click', { location: 'bottom_cta' }); }}
                                     className="group relative inline-flex items-center gap-3 px-10 py-5 text-lg font-bold text-white rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/30 active:scale-[0.98] select-none"
                                     style={{ background: 'linear-gradient(135deg, #4338ca, #6366f1, #7c3aed)' }}
                                 >
@@ -1032,6 +1035,36 @@ export function LandingPage() {
                 </motion.div>
             </section>
 
+            {/* Pricing Section */}
+            <section className="relative z-20 py-24 px-6">
+                <div className="max-w-lg mx-auto text-center">
+                    <p className="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-4">Pricing</p>
+                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Simple pricing</h2>
+                    <p className="text-slate-400 mb-12 text-lg">Start free for 30 days. No credit card required.</p>
+                    <div className="bg-slate-900/80 border border-indigo-500/20 rounded-2xl p-10 shadow-xl shadow-indigo-500/10 text-left">
+                        <div className="flex items-end gap-1 mb-2">
+                            <span className="text-5xl font-bold tracking-tight">$49</span>
+                            <span className="text-slate-400 text-lg mb-2">/month</span>
+                        </div>
+                        <p className="text-indigo-400 text-sm font-semibold mb-8">After your free 30-day trial</p>
+                        <ul className="space-y-3 mb-10">
+                            {['Custom-built website, your brand', 'Lead capture forms → go directly to you', 'Automated email follow-up sequences', 'Admin dashboard — edit anything', 'Custom domain connection', 'Cancel anytime'].map((f, i) => (
+                                <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
+                                    <span className="text-indigo-400 font-bold">✓</span>{f}
+                                </li>
+                            ))}
+                        </ul>
+                        <button
+                            onClick={() => { setShowIntakeForm(true); if (typeof window !== 'undefined' && (window as any).gtag) (window as any).gtag('event', 'cta_click', { location: 'pricing_section' }); }}
+                            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-colors duration-200 text-base"
+                        >
+                            Start Free — No Credit Card
+                        </button>
+                        <p className="text-center text-xs text-slate-600 mt-3">Cancel anytime &nbsp;·&nbsp; <a href="/pricing" className="text-indigo-500 hover:text-indigo-400">See full pricing details →</a></p>
+                    </div>
+                </div>
+            </section>
+
             {/* Footer */}
             <footer className="relative z-20 border-t border-white/5 bg-slate-950/90 md:backdrop-blur-xl">
                 <div className="container mx-auto px-6 max-w-6xl py-12">
@@ -1046,6 +1079,9 @@ export function LandingPage() {
 
                         {/* Links */}
                         <div className="flex items-center gap-8 text-sm text-slate-500">
+                            <a href="/pricing" className="hover:text-indigo-400 transition-colors duration-200">
+                                Pricing
+                            </a>
                             <a href="/privacy" className="hover:text-indigo-400 transition-colors duration-200">
                                 Privacy Policy
                             </a>

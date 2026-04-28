@@ -10,62 +10,47 @@ export const getAuditEmailHtml = (
 ) => {
   const firstName = agentName.split(' ')[0];
   const cityLine = city && city !== 'Unknown'
-    ? `I ran an analysis on your digital presence in ${city} to see how you stack up against top agents in your market.`
-    : `I ran an analysis on your digital presence to see how you stack up against top agents in your market.`;
+    ? `I put together a quick digital audit for agents in ${city} — wanted to share your results.`
+    : `I put together a quick digital audit — wanted to share your results.`;
 
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0; padding:0; background-color:#f8fafc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
 
   <!-- Hidden preview text -->
-  <span style="display:none; max-height:0; overflow:hidden; mso-hide:all;">I found 3 areas where you might be losing leads to other agents — here's the full breakdown.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
+  <span style="display:none; max-height:0; overflow:hidden; mso-hide:all;">I found a few specific areas where leads might be slipping through — full breakdown inside.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
 
-  <div style="max-width:600px; margin:40px auto; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.05);">
+  <div style="max-width:600px; margin:40px auto; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.06);">
 
-    <!-- Header with Logo -->
-    <div style="background-color:#ffffff; padding: 32px; text-align:center; border-bottom: 1px solid #f1f5f9;">
-      <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 32px; font-weight: 500; color: #0f172a; letter-spacing: -1px;">
-        Site<span style="color: #6366f1;">o</span>
-      </div>
-    </div>
+    <div style="padding: 40px 36px;">
 
-    <div style="padding: 40px 32px;">
-
-      <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:24px;">
+      <p style="font-size:16px; color:#334155; line-height:1.7; margin:0 0 20px;">
         Hi ${firstName},
       </p>
 
-      <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:24px;">
+      <p style="font-size:16px; color:#334155; line-height:1.7; margin:0 0 20px;">
         ${cityLine}
       </p>
 
-      <p style="font-size:16px; color:#334155; line-height:1.6; margin-bottom:32px;">
-        I found <strong>3 key areas</strong> where you might be losing potential leads — here's the full breakdown.
+      <p style="font-size:16px; color:#334155; line-height:1.7; margin:0 0 36px;">
+        Found a few specific areas where leads might be slipping through. The full breakdown is at the link below (expires in 7 days).
       </p>
 
-      <div style="background-color:#f1f5f9; padding:24px; border-radius:8px; text-align:center; margin-bottom:32px;">
-        <p style="margin:0 0 16px 0; font-size:14px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
-          YOUR ANALYSIS IS READY
-        </p>
-        <a href="${auditUrl}" style="display:inline-block; background-color:#4f46e5; color:#ffffff; font-size:16px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:6px;">
+      <p style="margin:0 0 40px;">
+        <a href="${auditUrl}" style="display:inline-block; background-color:#4f46e5; color:#ffffff; font-size:15px; font-weight:600; text-decoration:none; padding:12px 28px; border-radius:8px;">
           View Full Report
         </a>
-      </div>
-
-      <p style="font-size:14px; color:#64748b; line-height:1.6; margin-bottom:32px;">
-        This link is private and will expire in 7 days.
       </p>
 
       <!-- Signature -->
-      <table cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;">
+      <table cellpadding="0" cellspacing="0" border="0" style="margin-top:8px; border-top:1px solid #f1f5f9; padding-top:24px;">
         <tr>
           <td style="padding-right:14px; vertical-align:middle;">
-            <img src="${GEORGE_HEADSHOT}" alt="George" width="56" height="56" style="width:56px; height:56px; border-radius:50%; object-fit:cover; display:block;" />
+            <img src="${GEORGE_HEADSHOT}" alt="George" width="52" height="52" style="width:52px; height:52px; border-radius:50%; object-fit:cover; display:block;" />
           </td>
           <td style="vertical-align:middle;">
             <p style="margin:0; font-size:15px; font-weight:600; color:#0f172a; line-height:1.4;">George</p>
@@ -87,7 +72,7 @@ export const getAuditEmailHtml = (
     </div>
 
     <!-- Footer -->
-    <div style="background-color:#f8fafc; padding:20px 32px; text-align:center; border-top:1px solid #e2e8f0;">
+    <div style="background-color:#f8fafc; padding:20px 36px; text-align:center; border-top:1px solid #e2e8f0;">
       <p style="margin:0 0 16px 0; color:#94a3b8; font-size:10px; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">
         Trusted by top producing agents at
       </p>
@@ -123,7 +108,7 @@ export const getAuditEmailHtml = (
       <p style="margin:24px 0 0 0; color:#94a3b8; font-size:11px;">
         Sent to ${agentEmail}
         ${unsubscribeUrl ? `
-        <br/><br/>
+        &nbsp;·&nbsp;
         <a href="${unsubscribeUrl}" style="color:#94a3b8; text-decoration:underline;">Unsubscribe</a>
         ` : ''}
       </p>

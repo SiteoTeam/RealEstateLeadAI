@@ -10,6 +10,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard.tsx'
 import { ResetPassword } from './pages/admin/ResetPassword.tsx'
 import { AuditPage } from './pages/AuditPage.tsx'
 import { PrivacyPolicy } from './pages/PrivacyPolicy.tsx'
+import { PricingPage } from './pages/PricingPage.tsx'
 
 import { DomainRouter } from './DomainRouter.tsx'
 
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
         {/* Public Website */}
         <Route path="/w/:slug" element={<PublicWebsite />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/pricing" element={<PricingPage />} />
 
         {/* Audit Funnel */}
         <Route path="/audit/:token" element={<AuditPage />} />

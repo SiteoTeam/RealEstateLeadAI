@@ -833,6 +833,84 @@ router.post('/cron/prune-expired', async (req, res) => {
     }
 });
 
+// CRON: Send Onboarding Emails (Day 2 & Day 5 after trial start)
+// POST /api/admin/cron/onboarding-emails
+router.post('/cron/onboarding-emails', async (req, res) => {
+    const cronSecret = req.headers['x-cron-secret'] || req.headers['authorization']?.replace('Bearer ', '');
+    const expectedSecret = process.env.CRON_SECRET_GITHUB;
+    if (!expectedSecret || cronSecret !== expectedSecret) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const db = getDb();
+        if (!db) return res.status(500).json({ error: 'DB not available' });
+
+        const { sendOnboarding2Email, sendOnboarding3Email } = await import('../services/email');
+        const CLIENT_URL = process.env.CLIENT_URL || 'https://siteo.io';
+        let sent = { day2: 0, day5: 0 };
+
+        // Day 2: trial started between 2d0h and 2d23h59m ago
+        const day2Start = new Date(); day2Start.setDate(day2Start.getDate() - 3);
+        const day2End = new Date(); day2End.setDate(day2End.getDate() - 2);
+
+        // Day 5: trial started between 5d0h and 5d23h59m ago
+        const day5Start = new Date(); day5Start.setDate(day5Start.getDate() - 6);
+        const day5End = new Date(); day5End.setDate(day5End.getDate() - 5);
+
+        const { data: day2Leads } = await db
+            .from('scraped_agents')
+            .select('id, full_name, primary_email, website_slug')
+            .gte('trial_started_at', day2Start.toISOString())
+            .lte('trial_started_at', day2End.toISOString())
+            .eq('is_paid', false)
+            .eq('do_not_contact', false)
+            .eq('is_unsubscribed', false);
+
+        for (const lead of day2Leads || []) {
+            if (!lead.primary_email || !lead.website_slug) continue;
+            // Check if already sent
+            const { count } = await db.from('email_logs')
+                .select('id', { count: 'exact', head: true })
+                .eq('lead_id', lead.id)
+                .eq('subject', 'onboarding-day-2');
+            if ((count ?? 0) > 0) continue;
+
+            const adminUrl = `${CLIENT_URL}/w/${lead.website_slug}/admin?source=email`;
+            const result = await sendOnboarding2Email({ agentName: lead.full_name, agentEmail: lead.primary_email, adminUrl, leadId: lead.id });
+            if (result.success) { sent.day2++; console.log(`[Cron] Onboarding day-2 sent to ${lead.primary_email}`); }
+        }
+
+        const { data: day5Leads } = await db
+            .from('scraped_agents')
+            .select('id, full_name, primary_email, website_slug')
+            .gte('trial_started_at', day5Start.toISOString())
+            .lte('trial_started_at', day5End.toISOString())
+            .eq('is_paid', false)
+            .eq('do_not_contact', false)
+            .eq('is_unsubscribed', false);
+
+        for (const lead of day5Leads || []) {
+            if (!lead.primary_email || !lead.website_slug) continue;
+            const { count } = await db.from('email_logs')
+                .select('id', { count: 'exact', head: true })
+                .eq('lead_id', lead.id)
+                .eq('subject', 'onboarding-day-5');
+            if ((count ?? 0) > 0) continue;
+
+            const adminUrl = `${CLIENT_URL}/w/${lead.website_slug}/admin?source=email`;
+            const result = await sendOnboarding3Email({ agentName: lead.full_name, agentEmail: lead.primary_email, adminUrl, leadId: lead.id });
+            if (result.success) { sent.day5++; console.log(`[Cron] Onboarding day-5 sent to ${lead.primary_email}`); }
+        }
+
+        res.json({ success: true, sent });
+
+    } catch (err: any) {
+        console.error('[Cron] Onboarding emails error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // MANUAL PRUNE: POST /api/admin/prune-expired
 // Secured by Session Auth (for Admin UI button)
 router.post('/prune-expired', verifySupabaseUser, async (req, res) => {

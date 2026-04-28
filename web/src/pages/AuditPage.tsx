@@ -81,6 +81,14 @@ export function AuditPage() {
     const [scoreDisplay, setScoreDisplay] = useState(0);
 
     useEffect(() => {
+        if (step === 'results') {
+            if (typeof window !== 'undefined' && (window as any).gtag) {
+                (window as any).gtag('event', 'audit_complete', { score: audit?.results?.score });
+            }
+        }
+    }, [step]);
+
+    useEffect(() => {
         if (step === 'results' && audit?.results?.score) {
             let start = 0;
             const end = audit.results.score;
@@ -263,7 +271,7 @@ export function AuditPage() {
                         </p>
 
                         <button
-                            onClick={() => setStep('questions')}
+                            onClick={() => { setStep('questions'); if (typeof window !== 'undefined' && (window as any).gtag) (window as any).gtag('event', 'audit_start'); }}
                             className="w-full bg-slate-900 text-white font-bold text-lg py-4 rounded-xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 flex items-center justify-center gap-3 group animate-in slide-in-from-bottom-4 fade-in duration-700 delay-500 relative overflow-hidden"
                         >
                             <svg className="w-5 h-5 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
