@@ -149,7 +149,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
         await db.from('email_logs').insert({
           lead_id: leadId || null, // Create relationship
           recipient: agentEmail,
-          subject: `Question about your listings`,
+          subject: `your listings`,
           status: 'sent',
           resend_id: result?.id,
           created_at: new Date().toISOString()
@@ -169,7 +169,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
       if (db) {
         await db.from('email_logs').insert({
           recipient: agentEmail,
-          subject: `Question about your listings`,
+          subject: `your listings`,
           status: 'failed',
           error_message: err.message,
           created_at: new Date().toISOString()
